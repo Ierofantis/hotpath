@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Why we split one pipeline into three services · Hotpath</title>
+<meta name="description" content="Fetch, parse, and store are three kinds of work with three resource profiles. One process forces them to share a fate they do not share in nature.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a class="logo" href="../index.html"><span class="spark">🔥</span>Hot<span class="path">path</span></a>
+    <div class="nav-spacer"></div>
+    <a class="nav-link" href="../index.html#feed">Latest</a>
+    <a class="nav-link" href="https://github.com/Ierofantis" target="_blank" rel="noopener">GitHub</a>
+    <a class="nav-cta" href="../index.html#feed">Read the feed</a>
+  </div>
+</header>
+
+<article class="article">
+  <div class="crumbs"><a href="../index.html">Hotpath</a> / Architecture</div>
+  <h1>Why we split one pipeline into three services</h1>
+  <p class="sub">Fetching, parsing, and storing are three kinds of work with three different resource profiles and three different ways to fail. Keeping them in one process makes them share a fate they never shared in nature.</p>
+  <div class="byline"><span class="avatar">I</span> Ierofantis &middot; 7 min read &middot; adapted from <i>Refactoring Data-Intensive Applications</i></div>
+
+  <div class="artcover cv-build">⚙️</div>
+
+  <div class="prose">
+    <p>A data pipeline that pulls from external sources does three kinds of work, and they could not be more different. <strong>Acquiring</strong> a page is heavy and slow: it may drive a browser, it holds connections open, it waits on a remote server. <strong>Transforming</strong> the page into a record is light and fast: pure parsing, no network, no browser. <strong>Persisting</strong> the record is bound by the database it writes to: as fast as the store allows, and no faster.</p>
+
+    <p>Three resource profiles, three failure modes, three reasons to scale. And for a long time we ran all three inside one process, because at small volume that is obviously simplest. At large volume it is the thing that hurts.</p>
+
+    <pre><code>Acquire     heavy, holds the browser and the network waits
+   │  queue
+   ▼
+Transform   light, pure parsing, no network
+   │  queue
+   ▼
+Persist     bound by the store it writes to</code></pre>
+
+    <h2>What one process costs</h2>
+    <p>Housing all three together forces them to share a fate:</p>
+    <ul>
+      <li>The heavy acquisition drags its browser dependencies into the same deployable as the trivial parser, so you cannot ship the parser without the browser.</li>
+      <li>The slow fetch holds up the fast parse queued behind it.</li>
+      <li>A single unparseable document can kill a worker that was halfway through a batch of hundreds of pages, throwing away the acquisition work already done on all the others.</li>
+    </ul>
+    <p>None of this is visible at small scale. All of it compounds at large scale, because the three kinds of work want to grow in different directions and the shared process cannot follow any of them.</p>
+
+    <div class="callout"><b>The move:</b> give each kind of work its own service, drawing the boundary where the nature of the work already divided it. Every payoff below is a direct consequence of cutting along that seam.</div>
+
+    <h2>The split, and its payoffs</h2>
+    <ul>
+      <li><strong>Deploy independently.</strong> The parser's image no longer carries the browser.</li>
+      <li><strong>Scale independently.</strong> The acquisition tier can grow to many workers while the persistence tier stays small against a database that would not thank you for more writers.</li>
+      <li><strong>Fail independently.</strong> An unparseable document fails one transform task, and its neighbors' acquisition survives, already done and waiting.</li>
+    </ul>
+
+    <h2>Queues, not calls</h2>
+    <p>Splitting into services raises the obvious question: how do they talk? The answer that preserves everything you just won is that they do not talk directly at all. If acquisition called transformation and waited for a reply, a slow parser would back up into the fetcher exactly as it did inside the one process. Instead each service hands its result to a durable queue and moves on. No service waits on its neighbor; the queues absorb the differences in their speeds. That is what makes the independent scaling real rather than nominal, because a service can only be scaled on its own if it is not synchronously blocked on someone else.</p>
+
+    <h2>The general lesson</h2>
+    <p>The boundaries were not a clever decomposition someone invented. They were already there, in the fact that fetching, parsing, and storing are different work. Good service boundaries usually are found, not designed: look for where the resource profile, the failure mode, and the scaling need all change at once, and cut there.</p>
+
+    <div class="srcbox">
+      <span class="lbl">From the same shelf</span>
+      <a class="srclink" href="config-over-code-human-ceiling.html">→ Config over code, and the human ceiling</a>
+      <a class="srclink" href="../index.html#feed">→ More from Hotpath</a>
+    </div>
+
+    <p class="endnote">Adapted from my book <i>Refactoring Data-Intensive Applications</i> (and its dual-voice edition, <i>Refactoring Unified</i>).</p>
+
+    <a class="backfeed" href="../index.html#feed">← Back to the feed</a>
+  </div>
+</article>
+
+<footer class="foot">
+  <div class="foot-inner">
+    <a class="logo" href="../index.html" style="font-size:16px"><span class="spark" style="width:24px;height:24px;font-size:13px">🔥</span>Hotpath</a>
+    <div class="foot-spacer"></div>
+    <span>Written by @ierofantis</span>
+  </div>
+</footer>
+
+</body>
+</html>

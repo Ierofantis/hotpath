@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The cookie handoff: let a browser solve it, then let curl fly · Hotpath</title>
+<meta name="description" content="The trick that beats Cloudflare at scale: a real browser solves the challenge once, exports its cookies, and a fast HTTP client spends them until they expire.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a class="logo" href="../index.html"><span class="spark">🔥</span>Hot<span class="path">path</span></a>
+    <div class="nav-spacer"></div>
+    <a class="nav-link" href="../index.html#feed">Latest</a>
+    <a class="nav-link" href="https://github.com/Ierofantis" target="_blank" rel="noopener">GitHub</a>
+    <a class="nav-cta" href="../index.html#feed">Read the feed</a>
+  </div>
+</header>
+
+<article class="article">
+  <div class="crumbs"><a href="../index.html">Hotpath</a> / Systems</div>
+  <h1>The cookie handoff: let a browser solve it, then let curl fly</h1>
+  <p class="sub">An HTTP client cannot run JavaScript, yet a warmup beats defenses that demand it. The contradiction dissolves once you split the work between two processes.</p>
+  <div class="byline"><span class="avatar">I</span> Ierofantis &middot; 7 min read &middot; adapted from <i>The Quiet Fetch</i></div>
+
+  <div class="artcover cv-shield">🍪</div>
+
+  <div class="prose">
+    <p>Here is a contradiction I had to resolve to scrape anything hard. A defense like Cloudflare returns a challenge that expects a real browser to run a script. A plain HTTP client runs no script, so it cannot solve the challenge. And yet the standard technique for beating these defenses at scale is a <em>warmup</em>, which somehow lets a fast client through. Both facts are true. The resolution is that the work is split between two processes along one clean line.</p>
+
+    <h2>Two phases, two tools</h2>
+    <p>Phase one is a real browser. It loads the target's entry page, the challenge script runs <em>inside that browser</em>, the runtime is probed, and on a satisfactory answer the defense sets a token in the cookie jar. This is slow and memory-hungry, but it happens once per token, not once per request.</p>
+    <p>Phase two is a fast HTTP client. You export the cookies from the browser and attach them to the client's requests. The client runs no script and solves nothing. It is simply the bearer of a valid token, and a defense that sees a valid token serves the content without re-challenging.</p>
+    <pre><code>Phase 1  (browser, once)   load entry page → script runs → token set
+                           export the cookie jar
+Phase 2  (client, N times) attach token → fetch fast → spend the trust
+on rejection               back to Phase 1 → refresh → resume</code></pre>
+
+    <div class="callout"><b>The mental model:</b> the browser is the <b>solver</b> (runs JS, slow, expensive). The client is the <b>replay agent</b> (no JS, fast, cheap). A cookie is the bridge, because a token, unlike a rendered-canvas hash, is just bytes on the wire.</div>
+
+    <h2>The three conditions</h2>
+    <p>The handoff only works if the client respects the binding the defense put on the token. Get any of these wrong and it fails silently:</p>
+    <ol>
+      <li><strong>Same address.</strong> The token is bound to the IP that solved the challenge. Present it from a different exit and it is rejected.</li>
+      <li><strong>Coherent identity.</strong> The client's TLS fingerprint and headers must match the browser that earned the token. A Chrome-solved token spent by a client impersonating Firefox is two identities that cannot both be true.</li>
+      <li><strong>Validity window.</strong> The token lasts a bounded time and request count. The client's burst has to finish before it expires.</li>
+    </ol>
+    <p>This is why the earlier idea of "just move the cookie to curl" disappoints so often. The cookie can be reused, but only by a presenter that reproduces the whole binding.</p>
+
+    <h2>The refresh loop</h2>
+    <p>Because the token expires, the pattern is a loop, not a one-shot. The client fetches until a response tells it the token died (a challenge shell, or an empty body where content should be). Then the work goes back to the browser, the page reloads, a fresh token is minted, the cookies are re-exported, and the client resumes. Tune the loop by matching the client's burst length to the token's budget: long enough to amortize the browser's cost, short enough to finish before expiry.</p>
+
+    <h2>Where it stops working</h2>
+    <p>Against the strictest defenses, the token's life shrinks toward a single request, or the defense demands fresh runtime evidence on essentially every request. Then the loop saves nothing, because there is no burst to amortize the expensive solve across, and the honest move is to run every request inside the browser that already holds the trust. The handoff is for the common case where a token lives far longer than one request. Naming that boundary, per target, before you build against it, is most of the skill.</p>
+
+    <div class="srcbox">
+      <span class="lbl">Go deeper</span>
+      <a class="srclink" href="scrapers-six-surfaces.html">→ Why the request looked wrong in the first place</a>
+      <a class="srclink" href="../index.html#feed">→ More from Hotpath</a>
+    </div>
+
+    <p class="endnote">Adapted from my book <i>The Quiet Fetch</i>. For authorized scraping and defensive testing only.</p>
+
+    <a class="backfeed" href="../index.html#feed">← Back to the feed</a>
+  </div>
+</article>
+
+<footer class="foot">
+  <div class="foot-inner">
+    <a class="logo" href="../index.html" style="font-size:16px"><span class="spark" style="width:24px;height:24px;font-size:13px">🔥</span>Hotpath</a>
+    <div class="foot-spacer"></div>
+    <span>Written by @ierofantis</span>
+  </div>
+</footer>
+
+</body>
+</html>

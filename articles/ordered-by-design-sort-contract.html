@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Declare your sort order and delete half your memory · Hotpath</title>
+<meta name="description" content="When a data producer promises its output is sorted, the consumer can choose a merge over a hash, and the state it must keep collapses from proportional-to-data to effectively constant.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a class="logo" href="../index.html"><span class="spark">🔥</span>Hot<span class="path">path</span></a>
+    <div class="nav-spacer"></div>
+    <a class="nav-link" href="../index.html#feed">Latest</a>
+    <a class="nav-link" href="https://github.com/Ierofantis" target="_blank" rel="noopener">GitHub</a>
+    <a class="nav-cta" href="../index.html#feed">Read the feed</a>
+  </div>
+</header>
+
+<article class="article">
+  <div class="crumbs"><a href="../index.html">Hotpath</a> / Databases</div>
+  <h1>Declare your sort order and delete half your memory</h1>
+  <p class="sub">One sentence changes how a system combines data: when producers declare sort order as a first-class contract, consumers can select optimal algorithms without guessing. The state they keep collapses.</p>
+  <div class="byline"><span class="avatar">I</span> Ierofantis &middot; 8 min read &middot; from <i>Ordered by Design</i> &amp; my streaming SQL work</div>
+
+  <div class="artcover cv-graph">↕️</div>
+
+  <div class="prose">
+    <p>Most data systems treat sort order as something that happens at runtime, if the optimizer decides it is worth it. I have come to think that is backwards, and a whole paradigm falls out of turning it around. The thesis fits in one sentence: <strong>when data producers declare sort order as a first-class contract, consumers can select optimal algorithms without guessing.</strong></p>
+
+    <h2>Two ways to combine data</h2>
+    <p>Consider joining data from two independent sources.</p>
+    <p><strong>Without a contract,</strong> the consumer receives rows in undefined order. To match keys it must build an auxiliary structure, a hash table, and materialize state proportional to the dataset. It is compensating, with memory, for a guarantee it was never given.</p>
+    <p><strong>With a contract,</strong> the producer declares its output sorted. The consumer advances through both sources in lockstep, comparing the fronts, and never revisits what has already passed. For the common case where each key appears once per side, the auxiliary memory drops from proportional-to-data to effectively constant. The same rows are examined either way; what collapses is the state you have to hold.</p>
+    <pre><code>left:  1  4  7  9        merge: walk both fronts in lockstep,
+right: 2  4  6  9               emit on equal, advance the smaller,
+match:    4     9               never look back → O(1) state</code></pre>
+
+    <div class="callout"><b>The shift is about location.</b> Sort order stops being a runtime decision an optimizer makes fresh for every query, invisible and re-estimated, and becomes a design-time contract the producer declares once: external, visible, and stable across every use.</div>
+
+    <h2>Why the contract is worth more than the sort</h2>
+    <p>The value is not that the data is sorted. It is that the order is <em>declared</em>, so the consumer can rely on it without inspecting statistics or guessing. An optimizer that decides to sort at runtime pays the cost and keeps the knowledge to itself. A producer that publishes its order as a contract lets every downstream consumer, now and later, choose the cheap algorithm with confidence. The knowledge moves from inside one query plan to the boundary between components, where it can be reused.</p>
+
+    <h2>It composes</h2>
+    <p>The real power shows up in chains. If an operator consumes sorted input and declares its output sorted too, order is preserved end to end, and a whole pipeline of merges runs in bounded state instead of materializing at each step. This is not a niche trick. The same idea underlies how a columnar engine, a distributed batch system, and a streaming SQL engine all get fast: sorted in, sorted out, merge in the middle.</p>
+
+    <h2>The streaming payoff</h2>
+    <p>Streaming is where the contract stops being an optimization and becomes a necessity. On an unbounded stream you <em>cannot</em> materialize everything, because there is no everything; the data never ends. A declared order is what makes a join over infinite input possible in bounded memory at all: the engine knows it will never see a key earlier than the ones it has, so it can emit results and release state as it advances, rather than waiting for a completion that never comes. The contract that merely saved memory in batch is what makes the computation exist in streaming.</p>
+
+    <h2>The takeaway</h2>
+    <p>Treat order as a property you promise at a boundary, not a luxury you hope an optimizer grants inside a query. Declare it where data is produced, preserve it as it flows, and the cheap algorithms, constant-state joins, single-pass merges, streaming that releases memory as it goes, become available everywhere downstream. You are not making the sort faster. You are making the guarantee reusable.</p>
+
+    <div class="srcbox">
+      <span class="lbl">Related</span>
+      <a class="srclink" href="one-pipeline-three-services.html">→ Cutting a pipeline along the work</a>
+      <a class="srclink" href="../index.html#feed">→ More from Hotpath</a>
+    </div>
+
+    <p class="endnote">Drawn from my book <i>Ordered by Design</i> and my work on a streaming SQL engine. The paradigm has a name in the book, the presorted generator, and it is the thread connecting DuckDB, Spark, and streaming under one idea.</p>
+
+    <a class="backfeed" href="../index.html#feed">← Back to the feed</a>
+  </div>
+</article>
+
+<footer class="foot">
+  <div class="foot-inner">
+    <a class="logo" href="../index.html" style="font-size:16px"><span class="spark" style="width:24px;height:24px;font-size:13px">🔥</span>Hotpath</a>
+    <div class="foot-spacer"></div>
+    <span>Written by @ierofantis</span>
+  </div>
+</footer>
+
+</body>
+</html>

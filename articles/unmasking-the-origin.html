@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Find your own origin before someone else does · Hotpath</title>
+<meta name="description" content="A CDN only protects you if its shield cannot be walked around. Here is the audit an attacker would run to find your origin IP, so you can run it against yourself first.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a class="logo" href="../index.html"><span class="spark">🔥</span>Hot<span class="path">path</span></a>
+    <div class="nav-spacer"></div>
+    <a class="nav-link" href="../index.html#feed">Latest</a>
+    <a class="nav-link" href="https://github.com/Ierofantis" target="_blank" rel="noopener">GitHub</a>
+    <a class="nav-cta" href="../index.html#feed">Read the feed</a>
+  </div>
+</header>
+
+<article class="article">
+  <div class="crumbs"><a href="../index.html">Hotpath</a> / Security</div>
+  <h1>Find your own origin before someone else does</h1>
+  <p class="sub">A CDN protects your server by hiding its address. If that address has leaked, every rate limit and filter it enforces can be walked around. Here is the audit, run against yourself.</p>
+  <div class="byline"><span class="avatar">I</span> Ierofantis &middot; 8 min read &middot; adapted from <i>The Quiet Fetch</i></div>
+
+  <div class="artcover cv-shield">🕵️</div>
+
+  <div class="prose">
+    <blockquote>This is a <b>defensive</b> piece. Every technique here is meant to be run against infrastructure you own, or under a written engagement. Pointed at anything else, it is trespass. The reason to know it is that an attacker knows it, and you cannot fix an exposure you have not looked for.</blockquote>
+
+    <p>A defense in front of a website works by standing between the internet and the real server, so all traffic passes through the defense and none reaches the server directly. The whole model depends on one secret: the origin's address. If a request can reach the origin directly, it bypasses every protection the CDN provides, its rate limits, its filtering, its challenge, all of it. So the single most useful audit you can run is: <em>can I find my own origin?</em></p>
+
+    <div class="callout"><b>The whole chapter in one line:</b> the list of ways an origin leaks is, read backwards, your hardening checklist. Each leak has a specific remedy.</div>
+
+    <h2>The leaks</h2>
+    <p>An origin escapes into public data in a handful of predictable ways.</p>
+    <ul>
+      <li><strong>Unfronted subdomains.</strong> Sites proxy <code>www</code> and <code>api</code> through the CDN and forget <code>mail</code>, <code>dev</code>, <code>staging</code>, <code>vpn</code>. Certificate transparency logs list every hostname ever certified, whether or not it is linked anywhere. Many resolve straight to the origin's network.</li>
+      <li><strong>Mail.</strong> A web CDN cannot front SMTP, so the MX records point at real infrastructure, often in the same range as the web origin. The SPF record sometimes hardcodes the origin's egress range outright.</li>
+      <li><strong>History.</strong> A site that adopted its CDN later had a public address before that. If the origin still lives there, historical DNS hands it over.</li>
+      <li><strong>Reused certificates.</strong> Many origins serve the same TLS certificate the CDN does. Internet-wide scanners index every server's cert; ask which addresses present yours, filter out the CDN, and the rest are candidates.</li>
+      <li><strong>Favicon and other fingerprints.</strong> The same icon served from origin, staging, and dev hashes identically, and scanners index that hash across the whole internet.</li>
+    </ul>
+
+    <h2>Confirming a candidate</h2>
+    <p>Given a suspect address, confirmation is direct: talk to that address while presenting the real hostname, as if the CDN were not there, and see whether it answers with the site's real content. On the command line that is one flag:</p>
+    <pre><code>curl -k --resolve example.com:443:&lt;candidate-ip&gt; https://example.com/ -s -o /dev/null -w "%{http_code} %{size_download}\n"
+# 200 88214   → real content, direct to origin. Exposed.
+# 000 0       → connection dropped at the firewall. Properly hidden.</code></pre>
+    <p>A real body means the origin is reachable around the defense. That is the finding.</p>
+
+    <h2>Closing the leaks</h2>
+    <p>Now read the list backwards. Put the auxiliary hosts and mail behind the CDN or firewall them. Lock the origin to accept connections only from the CDN's IP ranges. Retire the historical address. Serve a distinct certificate at the origin so the cert scan misses. Strip the literal range from the SPF record. When every leak is closed, the origin makes only outbound connections or refuses anything that is not the CDN, and the whole audit above comes back empty. That empty result is the goal state, and the only way to earn confidence in it is to have looked.</p>
+
+    <div class="srcbox">
+      <span class="lbl">Related</span>
+      <a class="srclink" href="scrapers-six-surfaces.html">→ The defenses this is auditing</a>
+      <a class="srclink" href="../index.html#feed">→ More from Hotpath</a>
+    </div>
+
+    <p class="endnote">Adapted from my book <i>The Quiet Fetch</i>. Authorized targets only: your own assets, or a scoped engagement.</p>
+
+    <a class="backfeed" href="../index.html#feed">← Back to the feed</a>
+  </div>
+</article>
+
+<footer class="foot">
+  <div class="foot-inner">
+    <a class="logo" href="../index.html" style="font-size:16px"><span class="spark" style="width:24px;height:24px;font-size:13px">🔥</span>Hotpath</a>
+    <div class="foot-spacer"></div>
+    <span>Written by @ierofantis</span>
+  </div>
+</footer>
+
+</body>
+</html>
