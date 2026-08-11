@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stack Panic: I turned the call stack into a furnace · Hotpath</title>
+<meta name="description" content="Real LeetCode problems fall into a furnace on an accelerating timer. Type the missing line or the spawns get permanently faster. How the panic loop is built.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a class="logo" href="../index.html"><span class="spark">🔥</span>Hot<span class="path">path</span></a>
+    <div class="nav-spacer"></div>
+    <a class="nav-link" href="../index.html#feed">Latest</a>
+    <a class="nav-link" href="https://github.com/Ierofantis" target="_blank" rel="noopener">GitHub</a>
+    <a class="nav-cta" href="../index.html#feed">Read the feed</a>
+  </div>
+</header>
+
+<article class="article">
+  <div class="crumbs"><a href="../index.html">Hotpath</a> / Game Dev</div>
+  <h1>Stack Panic: I turned the call stack into a furnace</h1>
+  <p class="sub">Answer fast or the stack overflows. It is a typing game about real LeetCode problems, and the whole design is one cruel feedback loop: getting it wrong makes the game harder forever.</p>
+  <div class="byline"><span class="avatar">I</span> Ierofantis &middot; 7 min read &middot; side project</div>
+
+  <div class="artcover cv-fire">🔥</div>
+
+  <div class="prose">
+    <p>Most "learn to code" games are calm. You solve a puzzle, a checkmark appears, you feel fine. I wanted the opposite: a game where a wrong answer is not neutral feedback but an <em>injury</em> the game remembers. So I built <strong>Stack Panic</strong>, where crates of real problems fall into a furnace on an accelerating timer, and the metaphor is the one every engineer already fears: the call stack, overflowing.</p>
+
+    <h2>The core loop</h2>
+    <p>A crate falls. On it is a real solution with one line blanked out, plus three candidate lines. You pick the right one, and then, the part everyone underestimates, you <strong>type it yourself</strong>. Pasting is disabled on purpose. The point is the muscle memory, not the recognition.</p>
+    <ul>
+      <li><strong>Correct</strong> → the crate is smelted in a shower of sparks.</li>
+      <li><strong>Wrong</strong> → the furnace stokes itself. Spawns get <em>permanently</em> faster.</li>
+    </ul>
+    <p>That last rule is the whole game. Difficulty is not a curve the designer sets; it is a consequence of your own mistakes. Eight crates stacked up unsolved and it is <code>STACK OVERFLOW</code>, game over. The panic is real because the ratchet only turns one way.</p>
+
+    <div class="callout"><b>Design rule I kept coming back to:</b> punishment should change the <i>world</i>, not just the score. A lost point is forgettable. A furnace that now spawns faster for the rest of the run is not.</div>
+
+    <h2>Forging the decoys</h2>
+    <p>The trick to a typing game about code is the wrong answers. Random noise is too easy to reject, so the decoys are forged by <em>mutating the real line</em>: off-by-one on a range, a flipped comparison, a <code>min</code>/<code>max</code> swap, <code>[0]</code> quietly turned into <code>[-1]</code>. They are the bugs you actually write at 2 a.m., which is exactly why they are hard to spot under a falling-crate timer.</p>
+    <p>The problems themselves are harvested from three public LeetCode solution repos into a single <code>leetlib.json</code>: 993 problems in the library. A separate test harness runs the blank-and-decoy engine over all of them, so I know every crate is solvable and every decoy is plausible before it ever falls.</p>
+
+    <h2>Rewarding the streak</h2>
+    <p>If mistakes stoke the furnace, streaks have to cool it, or the game is just cruel. So combos multiply score up to a cap, and two of them are named after things every engineer wants at the worst moment:</p>
+    <ul>
+      <li>A five-hit streak triggers <code>GC PAUSE</code>, and spawns freeze while you catch your breath.</li>
+      <li>A ten-hit streak triggers <code>O(1)</code>, and the game auto-clears the cheapest crate for you.</li>
+    </ul>
+    <p>The jokes are load-bearing. They make the tension legible: you always know whether you are winning by whether the furnace is speeding up or the powerups are landing.</p>
+
+    <h2>Two modes, one ladder</h2>
+    <p>Battle is the arcade above. But there is also a calmer <strong>Code Library</strong>: all 993 problems as untimed training, with search, difficulty filters, and a little XP for each first solve. Accounts climb a career ladder that will feel familiar, <code>Intern → Junior → Mid → Senior → Staff → Principal</code>, and guests can play the whole thing with progress kept in the browser.</p>
+
+    <h2>The shape of it</h2>
+    <p>Under the hood it is deliberately small: a Vite client for the game, a Node server for accounts and the leaderboard, MongoDB optional (without it, the game runs guest-only and never blocks you from playing). The interesting engineering is not the stack; it is the tuning of one number, how much each wrong answer accelerates the spawns, because that single knob is the difference between "fun panic" and "unplayable."</p>
+
+    <div class="srcbox">
+      <span class="lbl">Play / read the code</span>
+      <a class="srclink" href="https://github.com/Ierofantis/stack_panic" target="_blank" rel="noopener">→ Ierofantis/stack_panic on GitHub</a>
+    </div>
+
+    <p class="endnote">Built solo as a side project. If you clone it, look at <code>scripts/leetlab-test.mjs</code> first: the decoy engine is where the game actually lives.</p>
+
+    <a class="backfeed" href="../index.html#feed">← Back to the feed</a>
+  </div>
+</article>
+
+<footer class="foot">
+  <div class="foot-inner">
+    <a class="logo" href="../index.html" style="font-size:16px"><span class="spark" style="width:24px;height:24px;font-size:13px">🔥</span>Hotpath</a>
+    <div class="foot-spacer"></div>
+    <span>Written by Ierofantis</span>
+  </div>
+</footer>
+
+</body>
+</html>

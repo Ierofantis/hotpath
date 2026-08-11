@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Why your scraper gets blocked: the six surfaces · Hotpath</title>
+<meta name="description" content="A correct User-Agent is not a disguise. Modern defenses read six surfaces at once, and only about a fifth of them travel as bytes you control.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a class="logo" href="../index.html"><span class="spark">🔥</span>Hot<span class="path">path</span></a>
+    <div class="nav-spacer"></div>
+    <a class="nav-link" href="../index.html#feed">Latest</a>
+    <a class="nav-link" href="https://github.com/Ierofantis" target="_blank" rel="noopener">GitHub</a>
+    <a class="nav-cta" href="../index.html#feed">Read the feed</a>
+  </div>
+</header>
+
+<article class="article">
+  <div class="crumbs"><a href="../index.html">Hotpath</a> / Systems</div>
+  <h1>Why your scraper gets blocked: the six surfaces</h1>
+  <p class="sub">You set a real browser's User-Agent and still got a 403. That is not bad luck. A modern defense reads six layers of your request at once, and scores whether they agree.</p>
+  <div class="byline"><span class="avatar">I</span> Ierofantis &middot; 9 min read &middot; adapted from my book <i>The Quiet Fetch</i></div>
+
+  <div class="artcover cv-shield">🛡️</div>
+
+  <div class="prose">
+    <p>Ten years ago, fetching a page was one library call. Today the same call comes back with a challenge, a block, or a plausible-looking page that is actually an empty shell. The service on the other end has spent real engineering deciding whether the caller is a browser driven by a person or a program pretending to be one.</p>
+
+    <p>The beginner's instinct after a block is to fix the thing you can see, which is usually the headers. That instinct is not wrong so much as small. The defense does not read one signal and decide. It reads a <strong>stack</strong> of signals, most of which your program never consciously set, and scores the coherence of the whole.</p>
+
+    <h2>The six surfaces</h2>
+    <ol>
+      <li><strong>The transport handshake.</strong> Before a single byte of your request is sent, your client announces which ciphers and extensions it supports, and in what order. That announcement hashes to a fingerprint (JA3 / JA4). Real browsers produce very specific ones. Your language's default produces a different one, filed under "known automation."</li>
+      <li><strong>The protocol behavior.</strong> Over HTTP/2, the settings frame, the flow window, the header order and casing are all characteristic of the browser. Library defaults do not match.</li>
+      <li><strong>The headers and client hints.</strong> Not the values so much as their <em>coherence</em>. A Chrome User-Agent over a handshake no Chrome ever produced is not a disguise. It is two identities that cannot both be true.</li>
+      <li><strong>The runtime.</strong> Once a challenge script runs in a real browser, it probes the graphics stack, hashes a canvas render, measures the audio pipeline, enumerates fonts. An HTTP client runs no scripts, so it answers none of this.</li>
+      <li><strong>The behavior.</strong> Given a browser, the defense watches the pointer path, the scroll cadence, the dwell, the timing between requests, graded over the whole session.</li>
+      <li><strong>The network origin.</strong> The address you arrive on, and its reputation. A datacenter IP raises the bar for everything else about tenfold.</li>
+    </ol>
+
+    <h2>Why the correct User-Agent failed</h2>
+    <p>Put the block back together with the stack in view. Your program set surface three, partially, and left the other five at their language defaults. The handshake announced a Python library. The protocol tuning matched no browser. There was no runtime to probe, no behavior to grade, and the request very likely arrived from a datacenter address, which set the whole reading on a hostile footing.</p>
+    <p>Against that, a correct User-Agent is the one honest-looking element in a presentation that contradicts itself six ways. And contradiction is exactly what a coherence-scoring defense is built to catch. A plain library, presenting one consistent if non-browser identity, is in some sense <em>less</em> suspicious than a botched impersonation presenting three.</p>
+
+    <h2>The twenty and the eighty</h2>
+    <p>Here is the single most clarifying fact in the field. An HTTP client, however carefully dressed, can only present the surfaces that travel as bytes on the wire: the handshake, the protocol tuning, the headers, the address. That is roughly a fifth of the total surface.</p>
+    <p>The other four fifths, the runtime and behavior, exist only inside a running browser. There is no header for the hash of a rendered scene, because the hash is produced by running code against a graphics stack the client does not have. You cannot fake WebGL over HTTP. It is not hard; it is a category error.</p>
+
+    <div class="callout"><b>The line that organizes everything:</b> wire-only targets take a fast HTTP client. Runtime-probing or behavior-grading targets take a real browser or nothing. Every scraping system of scale carries both, and a rule for choosing between them.</div>
+
+    <h2>Cloudflare is a gate; Akamai is a relationship</h2>
+    <p>The two defenses everyone meets anchor opposite ends of a spectrum. Cloudflare, roughly, grants a durable token once you look coherent and arrive from a clean address, and mostly forgets you. Beat it with a good fingerprint plus a residential IP, and solve the occasional challenge in a browser whose cookie a fast client can then spend.</p>
+    <p>Akamai collects a continuous <em>sensor</em> payload that only a driven real browser can produce, revalidates it every few minutes, and grades your behavior across the whole crawl. There is no cheap solve and no durable replay. You beat it by running a real browser, warming the entry page first, keeping one sticky IP, and keeping concurrency low, because the parallelism that makes a fleet a fleet is itself the tell.</p>
+
+    <h2>The honest ceiling</h2>
+    <p>Some targets these techniques do not beat, and pretending otherwise wastes months. When a defense demands fresh runtime evidence on essentially every request, the cheap tools are simply out, and the browser-only regime that remains is slow and expensive enough to change the economics of the whole project. Knowing where that edge sits, for a given target, before investing against it, is the most valuable judgment in the whole discipline.</p>
+
+    <div class="srcbox">
+      <span class="lbl">Go deeper</span>
+      <a class="srclink" href="config-over-code-human-ceiling.html">→ How the fleet behind this is built</a>
+      <a class="srclink" href="../index.html#feed">→ More from Hotpath</a>
+    </div>
+
+    <p class="endnote">This is a distilled chapter from my book <i>The Quiet Fetch: Engineering Web Acquisition Against Modern Bot Defenses</i>. Everything here is for authorized scraping and defensive testing: know the rules of the site you are pulling from.</p>
+
+    <a class="backfeed" href="../index.html#feed">← Back to the feed</a>
+  </div>
+</article>
+
+<footer class="foot">
+  <div class="foot-inner">
+    <a class="logo" href="../index.html" style="font-size:16px"><span class="spark" style="width:24px;height:24px;font-size:13px">🔥</span>Hotpath</a>
+    <div class="foot-spacer"></div>
+    <span>Written by Ierofantis</span>
+  </div>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hotpath · field notes on systems, scrapers, and the games in between</title>
+<meta name="description" content="A dev blog by @ierofantis: web scraping against defenses, data-pipeline architecture, and side-project games like Stack Panic and GrappleMap.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a class="logo" href="index.html"><span class="spark">🔥</span>Hot<span class="path">path</span></a>
+    <div class="nav-spacer"></div>
+    <a class="nav-link" href="#feed">Latest</a>
+    <a class="nav-link" href="https://github.com/Ierofantis" target="_blank" rel="noopener">GitHub</a>
+    <a class="nav-cta" href="#feed">Read the feed</a>
+  </div>
+</header>
+
+<section class="hero">
+  <h1>Field notes on systems, scrapers,<br>and the <span class="hi">games in between</span>.</h1>
+  <p>I build data pipelines that survive hostile networks, write books about the architecture underneath, and ship small games on the side. Hotpath is where the two halves meet: real engineering, told plainly.</p>
+  <div class="by"><span class="avatar">I</span> by @ierofantis</div>
+</section>
+
+<main class="feed" id="feed">
+  <div class="feed-head"><h2>Latest posts</h2></div>
+  <div class="grid">
+
+    <a class="card" href="articles/scrapers-six-surfaces.html">
+      <div class="cover cv-shield"><span class="cat">Systems</span>🛡️</div>
+      <div class="card-body">
+        <div class="tags"><span class="tag t-blue">Web Scraping</span><span class="tag">Anti-Bot</span><span class="tag">TLS</span></div>
+        <h3>Why your scraper gets blocked: the six surfaces</h3>
+        <p class="excerpt">A correct User-Agent is not a disguise. Cloudflare and Akamai read six layers at once, and only about a fifth of them travel as bytes you control. Here is the whole stack.</p>
+        <div class="meta"><span class="av">I</span> 9 min read <span class="dot"></span> Adapted from <i>The Quiet Fetch</i></div>
+      </div>
+    </a>
+
+    <a class="card" href="articles/stack-panic-call-stack-furnace.html">
+      <div class="cover cv-fire"><span class="cat">Game Dev</span>🔥</div>
+      <div class="card-body">
+        <div class="tags"><span class="tag t-orange">Side Project</span><span class="tag">JavaScript</span><span class="tag">Game Design</span></div>
+        <h3>Stack Panic: I turned the call stack into a furnace</h3>
+        <p class="excerpt">Real LeetCode problems fall into a furnace on an accelerating timer. Type the missing line or the spawns get permanently faster. Here is how the panic loop is built.</p>
+        <div class="meta"><span class="av">I</span> 7 min read <span class="dot"></span> Side project</div>
+      </div>
+    </a>
+
+    <a class="card" href="articles/config-over-code-human-ceiling.html">
+      <div class="cover cv-build"><span class="cat">Architecture</span>🏗️</div>
+      <div class="card-body">
+        <div class="tags"><span class="tag t-purple">Data Pipelines</span><span class="tag">Config</span><span class="tag">LLMs</span></div>
+        <h3>Config over code, and the ceiling only a machine can raise</h3>
+        <p class="excerpt">Moving behavior into configuration has a limit, and the limit is human. A language model in the maintenance loop moves that ceiling. It does not remove it.</p>
+        <div class="meta"><span class="av">I</span> 8 min read <span class="dot"></span> Adapted from <i>Refactoring Unified</i></div>
+      </div>
+    </a>
+
+    <a class="card" href="articles/grapplemap-grappling-as-a-graph.html">
+      <div class="cover cv-graph"><span class="cat">Graphs</span>🥋</div>
+      <div class="card-body">
+        <div class="tags"><span class="tag t-green">Open Source</span><span class="tag">C++</span><span class="tag">Data Modeling</span></div>
+        <h3>GrappleMap: modeling grappling as a graph of positions</h3>
+        <p class="excerpt">A whole martial art as nodes and edges: positions are states, transitions are the moves between them. Notes from hacking on Eelis van der Weegen's GrappleMap.</p>
+        <div class="meta"><span class="av">I</span> 8 min read <span class="dot"></span> Deep dive</div>
+      </div>
+    </a>
+
+  </div>
+</main>
+
+<footer class="foot">
+  <div class="foot-inner">
+    <a class="logo" href="index.html" style="font-size:16px"><span class="spark" style="width:24px;height:24px;font-size:13px">🔥</span>Hotpath</a>
+    <div class="foot-spacer"></div>
+    <span>Written by @ierofantis</span>
+    <span class="dot" style="width:3px;height:3px;border-radius:50%;background:var(--faint)"></span>
+    <a href="https://github.com/Ierofantis" target="_blank" rel="noopener">GitHub</a>
+  </div>
+</footer>
+
+</body>
+</html>

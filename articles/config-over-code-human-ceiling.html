@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Config over code, and the ceiling only a machine can raise · Hotpath</title>
+<meta name="description" content="Moving behavior into configuration has a limit, and the limit is human. A language model in the maintenance loop moves that ceiling. It does not remove it.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a class="logo" href="../index.html"><span class="spark">🔥</span>Hot<span class="path">path</span></a>
+    <div class="nav-spacer"></div>
+    <a class="nav-link" href="../index.html#feed">Latest</a>
+    <a class="nav-link" href="https://github.com/Ierofantis" target="_blank" rel="noopener">GitHub</a>
+    <a class="nav-cta" href="../index.html#feed">Read the feed</a>
+  </div>
+</header>
+
+<article class="article">
+  <div class="crumbs"><a href="../index.html">Hotpath</a> / Architecture</div>
+  <h1>Config over code, and the ceiling only a machine can raise</h1>
+  <p class="sub">Moving per-source behavior out of code and into configuration is one of the best trades a data pipeline can make. It also has a hard limit, and the limit is a person.</p>
+  <div class="byline"><span class="avatar">I</span> Ierofantis &middot; 8 min read &middot; adapted from <i>Refactoring Unified</i></div>
+
+  <div class="artcover cv-build">🏗️</div>
+
+  <div class="prose">
+    <p>Picture a pipeline that pulls data from many external sources. Under a monolith, each source is a file of custom code. When a source renames a field on Friday afternoon, fixing it is a code change, a review, and a deploy, so the fix ships Monday and the weekend's data is wrong. For a system with many sources, format drift is the <em>most common change there is</em>, and that architecture has welded the most common change to its slowest machinery.</p>
+
+    <h2>Behavior as documents</h2>
+    <p>The fix is to describe each source in a document instead of code. The document says how to acquire it, how to parse which fields, how often to run. The services read the document at run time, for every work item, so an edit takes effect on the next item through the pipe. Adding a source stops being a release and becomes an edit.</p>
+    <p>The old per-source file splits into its two natures: the <strong>knowledge</strong> about the source becomes data, and the <strong>machinery</strong> for acting on it becomes a few generic services, written once. Even multi-step sources fit, as an ordered chain of steps in the document, each naming its inputs and outputs, executed generically. A chain reads like a recipe, reviewable by someone who has never seen that source.</p>
+
+    <h2>Where it stops paying</h2>
+    <p>Config-driven design decays one reasonable request at a time. One source needs a conditional. Another needs a value computed from two earlier steps. A third needs a loop. Each request is small and defensible and granted. A year later the schema has quietly become a programming language, and a bad one: no types, no tests, no debugger, no review tooling.</p>
+    <p>The defense is a boundary stated in advance. <strong>Configuration describes shape</strong>: sequences, selections, conditions, schedules. The moment a source needs <strong>logic</strong>, nesting, computation, iteration, it has earned real code behind a port. The blunt test: if you are about to write a loop in configuration, stop.</p>
+
+    <div class="callout"><b>The realization that reframes it:</b> that boundary is not a property of configuration. It sits exactly where a human maintainer loses confidence. The schema stays simple because a person governs it; the code behind the port stays shallow because a person has to debug it at 2 a.m. The ceiling is human.</div>
+
+    <h2>A companion for the documents</h2>
+    <p>Now put a language model beside the documents, not running in production, but maintaining the configuration the production services read. A source changes shape, a parsing rule stops producing its field, and the exact payload that broke is already on disk in the artifact store. The model is handed that payload, the failed rule, and a description of the field, and it drafts a revision.</p>
+    <p>The draft earns nothing by being produced by a model. It is run against the same payload that broke, and only a draft that actually produces the field is merged, and only for the field that failed. The human's role shifts from <strong>author</strong> to <strong>approver</strong>, and approving a validated draft is far cheaper than authoring one from scratch. So the configuration can carry more of the awkwardness the boundary used to exile to code. The ceiling moves up.</p>
+
+    <h2>Validation is the load-bearing wall</h2>
+    <p>Everything above rests on one mechanism. When a machine drafts production behavior, the safety does not come from trusting the machine. It comes from checking every draft against real, retained input before it takes effect, and degrading a failed check into an alert rather than a change. Confidence is manufactured by the validation, not inherited from the author, which is what lets the author be a model whose reasoning nobody can fully audit.</p>
+    <p>This is why the artifact store, built to spare re-fetching and to let runs replay, turns out to be structural for a purpose it was never designed for: the propose-and-check loop only works because the precise input that broke is still on disk to check against. Retained truth becomes foundational.</p>
+
+    <h2>What it does not replace</h2>
+    <p>The companion moves the ceiling; it does not remove it. A moved ceiling can be over-run exactly as the human one was, one granted proposal at a time, until you have a system whose behavior no person authored and no person entirely understands, correct only for as long as the validation stays strong and the retained inputs stay faithful. The model drafts, the validation gates, and a person stays accountable, because accountability is the one thing you cannot hand to a maintainer you cannot call into a review after an incident and ask what it was thinking.</p>
+    <p>A companion is a maintainer, not an owner. The system is still yours to answer for.</p>
+
+    <div class="srcbox">
+      <span class="lbl">From the same shelf</span>
+      <a class="srclink" href="scrapers-six-surfaces.html">→ The scrapers that feed pipelines like this</a>
+      <a class="srclink" href="../index.html#feed">→ More from Hotpath</a>
+    </div>
+
+    <p class="endnote">Adapted from <i>Refactoring Unified</i>, my dual-voice edition on rebuilding a data-intensive system. The same ideas run through my streaming-SQL work and <i>Ordered by Design</i>: shape belongs in data, logic belongs in code, and the boundary between them is the whole game.</p>
+
+    <a class="backfeed" href="../index.html#feed">← Back to the feed</a>
+  </div>
+</article>
+
+<footer class="foot">
+  <div class="foot-inner">
+    <a class="logo" href="../index.html" style="font-size:16px"><span class="spark" style="width:24px;height:24px;font-size:13px">🔥</span>Hotpath</a>
+    <div class="foot-spacer"></div>
+    <span>Written by Ierofantis</span>
+  </div>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GrappleMap: modeling grappling as a graph of positions · Hotpath</title>
+<meta name="description" content="A whole martial art as nodes and edges: positions are states, transitions are the moves between them. Notes from hacking on Eelis van der Weegen's GrappleMap.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a class="logo" href="../index.html"><span class="spark">🔥</span>Hot<span class="path">path</span></a>
+    <div class="nav-spacer"></div>
+    <a class="nav-link" href="../index.html#feed">Latest</a>
+    <a class="nav-link" href="https://github.com/Ierofantis" target="_blank" rel="noopener">GitHub</a>
+    <a class="nav-cta" href="../index.html#feed">Read the feed</a>
+  </div>
+</header>
+
+<article class="article">
+  <div class="crumbs"><a href="../index.html">Hotpath</a> / Graphs</div>
+  <h1>GrappleMap: modeling grappling as a graph of positions</h1>
+  <p class="sub">What if you modeled an entire martial art as a directed graph, where every vertex is a frozen pose and every edge is a move? That is exactly what GrappleMap does, and it is one of the most elegant data models I have worked in.</p>
+  <div class="byline"><span class="avatar">I</span> Ierofantis &middot; 8 min read &middot; deep dive</div>
+
+  <div class="artcover cv-graph">🥋</div>
+
+  <div class="prose">
+    <blockquote>A quick credit before anything else: <b>GrappleMap</b> is an open-source project by <b>Eelis van der Weegen</b>. I have been hacking on its tooling, and this is a deep dive into how it works, not a claim to have built it. Links to the real thing are at the bottom.</blockquote>
+
+    <p>Grappling is usually taught as a list of techniques: here is an armbar, here is a sweep, here is an escape. GrappleMap throws that framing out. It treats the sport the way you would treat a state machine, and once you see it that way you cannot unsee it.</p>
+
+    <h2>Positions are states, moves are edges</h2>
+    <p>The core model is a <a href="https://en.wikipedia.org/wiki/Graph_%28discrete_mathematics%29" target="_blank" rel="noopener">directed graph</a>. Each <strong>vertex</strong> is a concrete pose of two stick-figure players, the full 3D configuration of both bodies at one instant. Each <strong>edge</strong> is a transition: a short animation carrying one position into another. A technique, in this model, is not a special object at all. It is just a path through the graph.</p>
+    <p>This is the move that makes everything else fall out for free. "How do I get from side control to a kimura?" becomes a graph query. "What can I do from here?" is the set of outgoing edges. Chaining techniques is path-finding. A whole art collapses into <em>states and transitions between them</em>, which is the same shape as a pipeline, a parser, or a game's animation system.</p>
+
+    <div class="callout"><b>The reusable idea:</b> when a domain feels like an endless list, look for the states hiding under the verbs. The list of techniques was always a set of edges; nobody had drawn the vertices.</div>
+
+    <h2>Naming and tags, layered on top</h2>
+    <p>Interconnection alone is not enough to navigate thousands of poses, so positions and transitions are also named and tagged. Tags do triple duty: broad domains (<code>side_control</code>, <code>deep_half</code>), fine-grained pose facts (<code>bottom_supine</code>, <code>top_posture_broken</code>), and the presence of specific grips or controls (<code>kimura</code>, <code>crossface</code>, <code>arm_drag</code>). The graph gives you structure; the tags give you filters across it.</p>
+
+    <h2>How a pose is stored</h2>
+    <p>The database is a single text file, and it is wonderfully blunt. Each entry is a name, a <code>tags:</code> line, and then blocks of compact encoded text that hold the actual geometry: the coordinates of every joint of both stick figures, packed into a dense base-something string. A position looks roughly like this:</p>
+    <pre><code>side ctrl w/\nnear open elbow\nand crossface
+tags: side_control top_underhook bottom_supine crossface
+    Q2aAwQJFazuRQGddznKqcxxSRkbTzoJpbsxEToa1FVGgaYDSPnfgB7LGfaCxRle1LbLSf
+    nLOSubdIJKoaVL8QsaUMqOmauNOP1azNAPva9NNPnblOlQAauNFN2ffGdOFe9MbPefdOP
+    ...</code></pre>
+    <p>That encoding is the quiet genius of the format. Poses are high-dimensional (two bodies, many joints, three axes each), but storing them as opaque compact strings keeps the database diffable, greppable, and mergeable in plain Git, which matters enormously for a community-edited dataset. Transitions are stored as keyframes between two such poses, and the tools interpolate the frames in between.</p>
+
+    <h2>The tools around the graph</h2>
+    <p>A data model is only as good as what you can do with it, and this is where the project gets deep. There is a web composer and explorer for walking the graph, an editor for posing the figures, a native editor, even a VR interface. The pipeline that renders scripted or random matches into videos is pure graph traversal turned into animation.</p>
+    <p>The corner I have spent the most time in is the <strong>diff utility</strong> (<code>diff.cpp</code>), which summarizes a changeset: which positions moved, which edges were added or removed, which tags changed. For a dataset that lives in Git and is edited by many hands, a semantic diff, one that speaks in positions and transitions rather than raw encoded lines, is what keeps review humane. It is the same problem every collaborative data project eventually hits: your version control diffs bytes, but your reviewers think in domain objects.</p>
+
+    <h2>Why this shape keeps paying</h2>
+    <p>GrappleMap's stated goals include being an index into the instructional literature, a source of drills, and, maybe one day, a training set for machine learning that could discover new jiu-jitsu. Every one of those is only reachable <em>because</em> the art was modeled as a graph first. You cannot generate drills from a list of techniques; you can generate them from paths through a graph. The data model was not a detail. It was the thing that made the ambitions possible.</p>
+
+    <div class="srcbox">
+      <span class="lbl">The real project (by Eelis van der Weegen)</span>
+      <a class="srclink" href="https://github.com/Eelis/GrappleMap" target="_blank" rel="noopener">→ Eelis/GrappleMap on GitHub</a>
+      <a class="srclink" href="http://eel.is/GrappleMap/" target="_blank" rel="noopener">→ eel.is/GrappleMap</a>
+    </div>
+
+    <p class="endnote">All credit for GrappleMap goes to Eelis van der Weegen. I write about it because it is a masterclass in choosing the right data model, and because the tooling is a joy to hack on.</p>
+
+    <a class="backfeed" href="../index.html#feed">← Back to the feed</a>
+  </div>
+</article>
+
+<footer class="foot">
+  <div class="foot-inner">
+    <a class="logo" href="../index.html" style="font-size:16px"><span class="spark" style="width:24px;height:24px;font-size:13px">🔥</span>Hotpath</a>
+    <div class="foot-spacer"></div>
+    <span>Written by Ierofantis</span>
+  </div>
+</footer>
+
+</body>
+</html>
