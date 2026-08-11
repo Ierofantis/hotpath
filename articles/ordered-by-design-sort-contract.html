@@ -54,9 +54,10 @@ match:    4     9               never look back → O(1) state</code></pre>
     <p>Treat order as a property you promise at a boundary, not a luxury you hope an optimizer grants inside a query. Declare it where data is produced, preserve it as it flows, and the cheap algorithms, constant-state joins, single-pass merges, streaming that releases memory as it goes, become available everywhere downstream. You are not making the sort faster. You are making the guarantee reusable.</p>
 
     <div class="srcbox">
-      <span class="lbl">Related</span>
-      <a class="srclink" href="one-pipeline-three-services.html">→ Cutting a pipeline along the work</a>
-      <a class="srclink" href="../index.html#feed">→ More from Hotpath</a>
+      <span class="lbl">Get it / the code</span>
+      <a class="srclink" href="https://teopanta.gumroad.com/l/ordered_by_design" target="_blank" rel="noopener">→ Ordered by Design (the book)</a>
+      <a class="srclink" href="https://github.com/Ierofantis/streaming_sql_engine" target="_blank" rel="noopener">→ Streaming SQL Engine on GitHub</a>
+      <a class="srclink" href="one-pipeline-three-services.html">→ Related: three services</a>
     </div>
 
     <p class="endnote">Drawn from my book <i>Ordered by Design</i> and my work on a streaming SQL engine. The paradigm has a name in the book, the presorted generator, and it is the thread connecting DuckDB, Spark, and streaming under one idea.</p>
