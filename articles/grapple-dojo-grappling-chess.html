@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grapple Dojo: turning a grappling database into a turn-based game · Hotpath</title>
+<meta name="description" content="I built turn-based grappling chess on top of GrappleMap: 843 real positions, 1,485 transitions, 3D stick figures, and a duel where you have to spot the real technique among decoys.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a class="logo" href="../index.html"><span class="spark">🔥</span>Hot<span class="path">path</span></a>
+    <div class="nav-spacer"></div>
+    <a class="nav-link" href="../index.html#feed">Latest</a>
+    <a class="nav-link" href="https://github.com/Ierofantis" target="_blank" rel="noopener">GitHub</a>
+    <a class="nav-cta" href="../index.html#feed">Read the feed</a>
+  </div>
+</header>
+
+<article class="article">
+  <div class="crumbs"><a href="../index.html">Hotpath</a> / Game Dev</div>
+  <h1>Grapple Dojo: turning a grappling database into a turn-based game</h1>
+  <p class="sub">What if grappling were chess? Turn-based, on a board of real positions, where a submission is checkmate. I built it on top of GrappleMap, and the data model did most of the work.</p>
+  <div class="byline"><span class="avatar">I</span> Ierofantis &middot; 8 min read &middot; side project</div>
+
+  <div class="artcover cv-fire">🥋</div>
+
+  <div class="prose">
+    <p>In my <a href="grapplemap-grappling-as-a-graph.html">last post</a> I wrote about GrappleMap, Eelis van der Weegen's public-domain database that models grappling as a directed graph: positions are vertices, transitions are edges. Reading it, one thought would not leave me alone. That is not a database. That is a <strong>game board</strong>.</p>
+
+    <p>So I built <strong>Grapple Dojo</strong>: turn-based grappling chess, where every move in the game is real GrappleMap data. <strong>843 positions</strong> (601 named, plus 242 derived transitional nodes) and <strong>1,485 transitions</strong>, all rendered as animated 3D stick figures in Three.js. Nothing is invented; every technique you play is one a human hand-traced from an actual instructional.</p>
+
+    <blockquote>Credit where it is due: the position and transition data is <b>GrappleMap</b>, by <b>Eelis van der Weegen</b> (<a href="https://eel.is/GrappleMap/" target="_blank" rel="noopener">eel.is/GrappleMap</a>), traced from instructionals by Marcelo Garcia, Ryan Hall, Caio Terra and others. Grapple Dojo is the game I wrapped around that data.</blockquote>
+
+    <h2>The graph is the board</h2>
+    <p>Chess has squares and legal moves. Grapple Dojo has <strong>positions</strong> and <strong>transitions</strong>, which is the same thing wearing a gi. From any position, your legal moves are its outgoing edges. A technique is a path. And the terminal nodes, the submissions, are checkmate: reach one and it is a tap, instant win. The entire ruleset falls out of the graph structure. I did not design a move list; I inherited one from the data.</p>
+
+    <div class="callout"><b>The realization that started the project:</b> a dataset modeled as a graph is a game engine waiting to happen. Positions were already states, transitions were already legal moves, submissions were already win conditions. The hard part was done before I wrote a line.</div>
+
+    <h2>The duel: find the real edge among fakes</h2>
+    <p>The headline mode is <strong>Versus</strong>, a knowledge duel. Players alternate: one picks the battlefield position, the other has to find a real technique from it, chosen among decoy cards, each with a little 3D pose preview of where it would land. Pick a real edge and you score by how dominant the destination is. Find a real submission and the match is over.</p>
+    <p>If that decoy mechanic sounds familiar, it is the same idea as my other game, <a href="stack-panic-call-stack-furnace.html">Stack Panic</a>: the interesting design problem is never the right answer, it is the <em>wrong</em> ones. A decoy transition has to be plausible, a move that looks like it should exist from this position but does not, or leads somewhere worse than it appears. The graph makes those easy to generate: real neighbors of neighbors, edges that exist elsewhere but not here.</p>
+
+    <h2>Four more ways to play</h2>
+    <ul>
+      <li><strong>Traditional Dojo</strong>: 43 lessons, around 170 techniques, belt by belt from white to black. The main road to promotions.</li>
+      <li><strong>Training</strong>: a solo gym with Study, Drill, and Test phases, where you execute techniques by tapping the body part that moves. You can jump to any of the 843 positions.</li>
+      <li><strong>Open Mat</strong>: host a private room and train together online: a shared mat, live chat, and a free-posable <em>dummy mode</em> where you grab any joint, sculpt a position, and your partner sees it move live.</li>
+      <li><strong>Robots</strong>: three difficulties. The hardest one reads your habits and actively hunts submissions.</li>
+    </ul>
+
+    <h2>The engineering underneath</h2>
+    <p>It is deliberately one small process. A Node server handles REST for accounts, Socket.IO for the live rooms, and it serves the built client too, all on one port. The 3D is Three.js, driven straight from GrappleMap's joint coordinates. Accounts, XP, belts, and the leaderboard live in MongoDB, but guest mode works fully without a database, with progress kept in the browser, so nothing blocks you from playing.</p>
+    <p>The one honest scaling constraint is the multiplayer: rooms live in process memory. That keeps a single instance simple and fast, and it means going horizontal would need sticky sessions and a Socket.IO adapter. For a turn-based game with no shot clock, vertical scaling is plenty, and I would rather ship the simple thing than pre-build the distributed one for players who are not there yet.</p>
+
+    <h2>Why it worked</h2>
+    <p>Grapple Dojo exists because someone else made the right modeling decision years earlier. GrappleMap chose to represent an entire martial art as a graph, and that single choice is what made a game buildable on top of it without inventing any of the content. The lesson I keep relearning: pick the data model well, and everything downstream, including the things you never planned, gets cheaper.</p>
+
+    <div class="srcbox">
+      <span class="lbl">Play / read the code</span>
+      <a class="srclink" href="https://github.com/Ierofantis/grapple_dojo" target="_blank" rel="noopener">→ Ierofantis/grapple_dojo</a>
+      <a class="srclink" href="https://eel.is/GrappleMap/" target="_blank" rel="noopener">→ GrappleMap (the data, by Eelis)</a>
+    </div>
+
+    <p class="endnote">Built by me; the grappling data is GrappleMap by Eelis van der Weegen, used under its public-domain terms. If you want the model behind the board, read <a href="grapplemap-grappling-as-a-graph.html">the GrappleMap deep dive</a> first.</p>
+
+    <a class="backfeed" href="../index.html#feed">← Back to the feed</a>
+  </div>
+</article>
+
+<footer class="foot">
+  <div class="foot-inner">
+    <a class="logo" href="../index.html" style="font-size:16px"><span class="spark" style="width:24px;height:24px;font-size:13px">🔥</span>Hotpath</a>
+    <div class="foot-spacer"></div>
+    <span>Written by @ierofantis</span>
+  </div>
+</footer>
+
+</body>
+</html>

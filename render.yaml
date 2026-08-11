@@ -1,20 +1,8 @@
 # Render blueprint — deploys Hotpath as a static site.
-# Docs: https://render.com/docs/static-sites  /  https://render.com/docs/blueprint-spec
+# Minimal on purpose: extra headers/routes blocks can break asset serving.
 services:
   - type: web
     name: hotpath
     runtime: static
-    # No build step: the site is hand-written HTML/CSS with zero dependencies.
-    buildCommand: "echo 'static site, nothing to build'"
-    # Publish the whole folder (index.html, /articles, /assets).
-    staticPublishPath: .
-    # Long-cache the immutable stylesheet.
-    headers:
-      - path: /assets/*
-        name: Cache-Control
-        value: public, max-age=86400
-    # Serve a friendly 404 instead of a raw error.
-    routes:
-      - type: rewrite
-        source: /404
-        destination: /index.html
+    buildCommand: echo "static site, nothing to build"
+    staticPublishPath: ./
