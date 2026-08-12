@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Personas: give your scraper a coherent identity · Hotpath</title>
+<meta name="description" content="A Chrome User-Agent over a Firefox TLS handshake is not a clever hybrid. It is an identity that cannot exist, and that is exactly what gets you blocked. Bind the layers into one object.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a class="logo" href="../index.html"><span class="spark">🔥</span>Hot<span class="path">path</span></a>
+    <div class="nav-spacer"></div>
+    <a class="nav-link" href="../index.html#feed">Latest</a>
+    <a class="nav-link" href="https://github.com/Ierofantis" target="_blank" rel="noopener">GitHub</a>
+    <a class="nav-cta" href="../index.html#feed">Read the feed</a>
+  </div>
+</header>
+
+<article class="article">
+  <div class="crumbs"><a href="../index.html">Hotpath</a> / Systems</div>
+  <h1>Personas: give your scraper a coherent identity</h1>
+  <p class="sub">A Chrome User-Agent over a Firefox TLS handshake is not a clever hybrid. It is an identity that cannot exist, and impossible identities are the easiest thing in the world for a defense to catch.</p>
+  <div class="byline"><span class="avatar">I</span> Ierofantis &middot; 7 min read &middot; adapted from <i>The Quiet Fetch</i></div>
+
+  <div class="artcover cv-shield">🎭</div>
+
+  <div class="prose">
+    <p>A modern defense does not score one signal. It scores the <em>coherence</em> of many: the TLS handshake, the protocol tuning, the User-Agent, the header set, the client hints. Each must describe the same browser. Set a Chrome User-Agent while your handshake is a Python library's, and you have not disguised yourself, you have presented two witnesses who cannot both be telling the truth. That contradiction is a stronger signal of automation than an honest, non-browser fingerprint would have been.</p>
+
+    <h2>Make identity an object</h2>
+    <p>If coherence across every layer is what keeps you alive, then coherence should not be a discipline you remember to apply on each request. It should be an object that cannot be constructed incoherently. Call it a persona: one record that carries a User-Agent, a full matching header set, the browser family, and the TLS impersonation target, all descending from a single choice of which browser this identity is.</p>
+    <p>The construction order is what guarantees it. Generate the header set for a chosen family. Read the User-Agent out of that set, so it agrees by construction. Detect the family from the User-Agent, and look up the TLS target from the family. Every field descends from one generation step, so there is no point at which a Chrome header set could be paired with a Firefox handshake. The impossible identity is not rejected by a check; it is simply unreachable.</p>
+
+    <div class="callout"><b>Bind, do not check.</b> Per-request validation is a call someone must remember in every code path, forever, including the ones added next year by someone who never read this. One missed path leaks a silent contradiction. Binding removes the whole class of failure by making the wrong thing impossible to express.</div>
+
+    <h2>A pool with a metabolism</h2>
+    <p>One identity used at any volume gets noticed, so you keep many, and more than quantity you need a discipline for how each is used over time. A pool of personas has three lifecycle events:</p>
+    <ul>
+      <li><strong>Cooldown.</strong> After use, a persona rests for a randomized interval before it can be handed out again, so no single identity accumulates a volume that looks automated.</li>
+      <li><strong>Burn.</strong> When a persona is challenged or blocked, it is not rested but retired, and a fresh one is generated to replace it. Resting a marked identity only sends it back to be recognized again.</li>
+      <li><strong>Session exhaustion.</strong> Even an uncompromised persona steps aside after a randomized budget of requests, because real browsing happens in bounded visits, not endless streams.</li>
+    </ul>
+    <p>Together these produce a population that behaves, in aggregate, like a crowd of real users: each active in short bursts, each resting between them, each visit of bounded length, and anything that draws suspicion removed rather than nursed.</p>
+
+    <h2>The takeaway</h2>
+    <p>Stop thinking in headers and start thinking in identities. Bind every layer to one browser choice so incoherence cannot be expressed, then give those identities a lifecycle so no one of them overstays the pattern of a real person. Coherence is too fragile to leave to discipline, and too important to get wrong.</p>
+
+    <div class="srcbox">
+      <span class="lbl">Related</span>
+      <a class="srclink" href="scrapers-six-surfaces.html">→ The layers a persona has to align</a>
+      <a class="srclink" href="the-proxy-grid.html">→ The address the persona rides on</a>
+    </div>
+
+    <p class="endnote">Adapted from my book <i>The Quiet Fetch</i>. For authorized scraping and defensive testing only.</p>
+
+    <a class="backfeed" href="../index.html#feed">← Back to the feed</a>
+  </div>
+</article>
+
+<footer class="foot">
+  <div class="foot-inner">
+    <a class="logo" href="../index.html" style="font-size:16px"><span class="spark" style="width:24px;height:24px;font-size:13px">🔥</span>Hotpath</a>
+    <div class="foot-spacer"></div>
+    <span>Written by @ierofantis</span>
+  </div>
+</footer>
+
+</body>
+</html>

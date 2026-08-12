@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The proxy grid: your address is part of your identity · Hotpath</title>
+<meta name="description" content="A scraper's identity is not just its headers. It is the address the packets arrive on, and if that address hops around, you look like infrastructure, not a person.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a class="logo" href="../index.html"><span class="spark">🔥</span>Hot<span class="path">path</span></a>
+    <div class="nav-spacer"></div>
+    <a class="nav-link" href="../index.html#feed">Latest</a>
+    <a class="nav-link" href="https://github.com/Ierofantis" target="_blank" rel="noopener">GitHub</a>
+    <a class="nav-cta" href="../index.html#feed">Read the feed</a>
+  </div>
+</header>
+
+<article class="article">
+  <div class="crumbs"><a href="../index.html">Hotpath</a> / Systems</div>
+  <h1>The proxy grid: your address is part of your identity</h1>
+  <p class="sub">You can get the TLS fingerprint and the headers perfect and still get blocked, because the address the request arrives on is a layer of the identity too, and defenses bind their trust to it.</p>
+  <div class="byline"><span class="avatar">I</span> Ierofantis &middot; 7 min read &middot; adapted from <i>The Quiet Fetch</i></div>
+
+  <div class="artcover cv-shield">🌐</div>
+
+  <div class="prose">
+    <p>A defense that grants your connection some trust grants it to a specific pair: this identity, from this address. If the same identity then appears from a different address, or the same address suddenly carries a dozen identities in a minute, the safe interpretation is suspicion. A real user's identity and address move together and change slowly. Something that hops between addresses request by request describes an infrastructure, not a person.</p>
+
+    <div class="callout"><b>The rule this forces:</b> an identity and its address are bound. A trust token minted on address A is worthless presented from address B, even with an identical fingerprint. The address is not a commodity you swap freely; for the length of a session it is part of who you are.</div>
+
+    <h2>Stickiness is the requirement</h2>
+    <p>So a session must keep its address for as long as it is a coherent session. Every request that session makes leaves from the same exit, presenting a stable pair for the defense to trust. When the session ends, whether it exhausted its request budget or was compromised, the next session may take a different address, because a new visit changing its address is exactly what a new visit would do. The unit of address stability is the session, matching the unit of identity.</p>
+
+    <h2>Where the addresses come from</h2>
+    <p>At any scale you need many addresses, and the naive answers are both wrong. One address per machine ties your address count to your machine count and pays for an exit on every box whether it is busy or not. A commercial pool drawn fresh per request dissolves the binding on every request. The answer is a pool of exits run as its own service: a <em>grid</em>.</p>
+    <p>Workers point at one entry point and encode what they want, a region and a session, into the proxy credential. The gateway reads it, picks a healthy exit in that region, binds the session to it, and forwards. Every request bearing the same session id routes to the same exit, which is the stickiness the identity layer needs, provided by the grid rather than arranged by hand. A distinguished form of the credential says "rotate to a fresh address first," which is how a worker asks for a new address when its current one is spent.</p>
+
+    <h2>Health and load, quietly</h2>
+    <p>The gateway does more than route. It discovers the available exits, health-checks each one continuously, and knows how many sessions each is carrying, so it can hand out the least-loaded healthy exit rather than whichever answered first. That matters twice over: an exit carrying too many sessions is both a bottleneck and, to a target, an address suspiciously busy for a residential line. Spreading sessions serves speed and plausibility with the same choice.</p>
+
+    <h2>The takeaway</h2>
+    <p>Treat the exit address as the bottom layer of the identity, not as plumbing. Bind it to the session, hold it for the session's life, rotate it deliberately when the identity turns over, and supply it from a managed pool that keeps addresses healthy and evenly loaded. Get the fingerprint perfect and then let the address wander, and you have undone the fingerprint's work one hop at a time.</p>
+
+    <div class="srcbox">
+      <span class="lbl">Related</span>
+      <a class="srclink" href="cookie-handoff-warmup.html">→ Why the token dies on the wrong address</a>
+      <a class="srclink" href="personas-coherent-identity.html">→ The identity the address belongs to</a>
+    </div>
+
+    <p class="endnote">Adapted from my book <i>The Quiet Fetch</i>. For authorized scraping and defensive testing only.</p>
+
+    <a class="backfeed" href="../index.html#feed">← Back to the feed</a>
+  </div>
+</article>
+
+<footer class="foot">
+  <div class="foot-inner">
+    <a class="logo" href="../index.html" style="font-size:16px"><span class="spark" style="width:24px;height:24px;font-size:13px">🔥</span>Hotpath</a>
+    <div class="foot-spacer"></div>
+    <span>Written by @ierofantis</span>
+  </div>
+</footer>
+
+</body>
+</html>

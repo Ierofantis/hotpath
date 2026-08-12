@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Why Akamai is harder than Cloudflare · Hotpath</title>
+<meta name="description" content="Cloudflare is a gate you pass once. Akamai is a relationship you maintain: a continuous sensor payload, a quota'd token, and behavior graded across the whole session.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a class="logo" href="../index.html"><span class="spark">🔥</span>Hot<span class="path">path</span></a>
+    <div class="nav-spacer"></div>
+    <a class="nav-link" href="../index.html#feed">Latest</a>
+    <a class="nav-link" href="https://github.com/Ierofantis" target="_blank" rel="noopener">GitHub</a>
+    <a class="nav-cta" href="../index.html#feed">Read the feed</a>
+  </div>
+</header>
+
+<article class="article">
+  <div class="crumbs"><a href="../index.html">Hotpath</a> / Systems</div>
+  <h1>Why Akamai is harder than Cloudflare</h1>
+  <p class="sub">People lump the big bot defenses together and then waste weeks. They are not the same problem. One is a gate you pass. The other is a relationship you have to maintain.</p>
+  <div class="byline"><span class="avatar">I</span> Ierofantis &middot; 8 min read &middot; adapted from <i>The Quiet Fetch</i></div>
+
+  <div class="artcover cv-shield">🧱</div>
+
+  <div class="prose">
+    <p>The most expensive mistake in scraping is treating every defense as the same wall. Cloudflare and Akamai anchor opposite ends of a spectrum, and confusing them is how you spend a month applying a Cloudflare playbook to an Akamai target and getting nowhere.</p>
+
+    <h2>Cloudflare, in short</h2>
+    <p>Cloudflare mostly grades your connection passively, and if your fingerprint is coherent and your address is clean, no challenge ever fires. When one does, it issues a token that is durable: earn it once, correctly, and a fast client can spend it on a long burst of requests before it needs refreshing. It is a gate. Pass it and you are mostly through.</p>
+
+    <div class="callout"><b>The one-line difference:</b> Cloudflare grants durable trust for a solved puzzle. Akamai demands continuous evidence that a real browser is still present, and revalidates it the whole time.</div>
+
+    <h2>Akamai's sensor payload</h2>
+    <p>Akamai's defining mechanism is a heavily obfuscated script that runs in the browser and continuously collects telemetry: deep runtime properties, graphics and audio hashes, page-load timing, and the path of the pointer and keyboard. It packages all of this into an encoded <em>sensor</em> payload and posts it back, and the server validates the whole thing before it issues a valid <code>_abck</code> token. There is no cheap solve, because the token is granted for producing rich, internally consistent evidence that only a driven real browser can generate. An HTTP client produces none of it.</p>
+
+    <h2>Quota and continuous revalidation</h2>
+    <p>Even once earned, the token is not durable the way Cloudflare's is. It carries a hidden budget of requests and time, and when that is spent it flips to an invalid state and the server returns empty or challenging responses until a fresh sensor payload renews it. Where Cloudflare lets you replay for a comfortable while, Akamai forces live script execution every few minutes. That single fact kills any strategy built on solving once and replaying for a long time.</p>
+
+    <h2>The rest of the moat</h2>
+    <p>Layered on top are the things that make it a genuinely different problem:</p>
+    <ul>
+      <li>A <strong>pixel challenge</strong> that binds a hardware-dependent rendering hash to the session, so a claimed identity must own real hardware.</li>
+      <li><strong>Per-customer tuning</strong>, so two Akamai sites behave differently and a technique proven on one is not proven on the next.</li>
+      <li><strong>Cross-endpoint correlation</strong>: hit an interior API directly, with no prior activity on the entry page, and you are caught because no sensor evidence exists for the session. This is why you always warm the homepage first.</li>
+    </ul>
+
+    <h2>What actually works</h2>
+    <p>The honest answer is unwelcome: Akamai is beaten only by running a real browser, and running it with discipline. Warm the entry page so the correlation finds prior evidence. Keep a persistent profile so the session has history. Renew the sensor when the quota is spent. Hold one sticky exit so the binding survives. And keep concurrency low, because the defense grades the session's aggregate shape, and a fleet of aggressive parallel requests is exactly the shape that condemns it. The cost is roughly an order of magnitude over a plain client, which is why a good system spends it only where it is genuinely required.</p>
+
+    <div class="srcbox">
+      <span class="lbl">Related</span>
+      <a class="srclink" href="scrapers-six-surfaces.html">→ The six surfaces both read</a>
+      <a class="srclink" href="cookie-handoff-warmup.html">→ The warmup that beats the milder end</a>
+    </div>
+
+    <p class="endnote">Adapted from my book <i>The Quiet Fetch</i>. For authorized scraping and defensive testing only.</p>
+
+    <a class="backfeed" href="../index.html#feed">← Back to the feed</a>
+  </div>
+</article>
+
+<footer class="foot">
+  <div class="foot-inner">
+    <a class="logo" href="../index.html" style="font-size:16px"><span class="spark" style="width:24px;height:24px;font-size:13px">🔥</span>Hotpath</a>
+    <div class="foot-spacer"></div>
+    <span>Written by @ierofantis</span>
+  </div>
+</footer>
+
+</body>
+</html>

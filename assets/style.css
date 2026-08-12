@@ -35,8 +35,12 @@ a{color:inherit;text-decoration:none}
 
 /* ── feed grid ───────────────────────────── */
 .feed{max-width:var(--maxw);margin:0 auto;padding:16px 22px 80px}
-.feed-head{display:flex;align-items:baseline;gap:12px;margin:14px 2px 22px}
+.feed-head{display:flex;align-items:center;gap:12px;margin:14px 2px 22px;flex-wrap:wrap}
 .feed-head h2{font-size:15px;text-transform:uppercase;letter-spacing:.12em;color:var(--faint);font-weight:700}
+.search{margin-left:auto;background:var(--surface);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:inherit;font-size:13.5px;padding:8px 13px;width:210px;max-width:100%;outline:none;transition:border-color .15s ease}
+.search::placeholder{color:var(--faint)}
+.search:focus{border-color:var(--accent)}
+@media(max-width:640px){.search{margin-left:0;width:100%}}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:20px}
 
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column;transition:transform .15s ease,border-color .15s ease,box-shadow .15s ease}

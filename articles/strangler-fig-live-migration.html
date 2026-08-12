@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The strangler fig: rebuild a live system without a rewrite · Hotpath</title>
+<meta name="description" content="You have a legacy system that works and hurts to change. The rewrite is seductive and usually fatal. There is a third door: stand a new system around the old and retire it piece by piece.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a class="logo" href="../index.html"><span class="spark">🔥</span>Hot<span class="path">path</span></a>
+    <div class="nav-spacer"></div>
+    <a class="nav-link" href="../index.html#feed">Latest</a>
+    <a class="nav-link" href="https://github.com/Ierofantis" target="_blank" rel="noopener">GitHub</a>
+    <a class="nav-cta" href="../index.html#feed">Read the feed</a>
+  </div>
+</header>
+
+<article class="article">
+  <div class="crumbs"><a href="../index.html">Hotpath</a> / Architecture</div>
+  <h1>The strangler fig: rebuild a live system without a rewrite</h1>
+  <p class="sub">You have a legacy system that earns money and hurts to change. The clean rewrite is the option everyone wants and the one that usually dies. There is a third door.</p>
+  <div class="byline"><span class="avatar">I</span> Ierofantis &middot; 8 min read &middot; adapted from <i>Refactoring Data-Intensive Applications</i></div>
+
+  <div class="artcover cv-build">🌿</div>
+
+  <div class="prose">
+    <p>Every team holding an aging system eventually faces the same three doors: keep patching, rewrite from scratch, or rebuild incrementally while the old system keeps running. The first has no exit. The second is the one every engineer secretly wants. This is about why the third door is usually right, and why the second one kills projects.</p>
+
+    <h2>The case against the big rewrite</h2>
+    <p>Start with what the old system actually contains. Its value was never its structure, which is poor. It is the accumulated fixes and special cases written into the code over years: undocumented answers to how each external system really behaves. A rewrite discards those answers and must then rediscover every one, and the only discovery mechanism available is failing in production, in front of customers who were not consulted. For a data-intensive system, feature parity is not a checklist you can read off the old code. Most of the features are invisible until they are missing.</p>
+    <p>Then comes the valley. From the day a rewrite is announced, the old system is condemned, and nobody invests in condemned code, so it decays faster. Meanwhile the new system is not yet trusted, because trust is only earned by running against reality for a long time. The result is a long stretch where revenue depends on the system nobody maintains while the best engineers work on the system nobody believes. Many rewrites die quietly in that valley.</p>
+
+    <div class="callout"><b>The reframing:</b> treat the legacy code as an asset to be wrapped and called, not a liability to be replaced. Its value is exactly the knowledge a rewrite would throw away.</div>
+
+    <h2>How the strangler fig works</h2>
+    <p>Stand up a new system <em>around</em> the old one. From the first week, the new system owns the scheduling, the queues, the state tracking, and the deployments. The old code keeps doing exactly what it did yesterday: reading from the same external systems, running the same logic, writing to the same database, unaware anything changed around it. A thin bridge lets the new orchestration call the old logic, often as a subprocess speaking JSON over stdin and stdout.</p>
+    <p>Then you retire the old code piece by piece, each piece on its own schedule, each retirement reversible. One source's logic gets reimplemented behind a clean interface and cut over; if it misbehaves, you flip back. The old system shrinks one component at a time until there is nothing left but the bridge, and then you delete the bridge too.</p>
+
+    <h2>The bridge exists to be deleted</h2>
+    <p>That framing matters. The bridge between old and new is not architecture you are proud of; it is scaffolding with a lifespan. It exists so that the migration can be incremental and reversible, and its whole purpose is to be removed once the last piece of legacy behind it is gone. Building it well means building it to disappear.</p>
+
+    <h2>When a rewrite is actually right</h2>
+    <p>To be fair to the seductive door: a rewrite is correct when the legacy logic is genuinely small enough to reproduce in weeks, or so broken that wrapping it would preserve bugs rather than knowledge. Short of that, the honest comparison is not risky-migration versus safe-status-quo. It is a risk taken deliberately, on a schedule you choose, against a risk absorbed passively, on a schedule chosen by the next outage. Framed that way, the third door usually wins.</p>
+
+    <div class="srcbox">
+      <span class="lbl">From the same shelf</span>
+      <a class="srclink" href="one-pipeline-three-services.html">→ What the new system looks like</a>
+      <a class="srclink" href="state-machine-not-saga.html">→ Tracking work across the seam</a>
+    </div>
+
+    <p class="endnote">Adapted from my book <i>Refactoring Data-Intensive Applications</i> (and its dual-voice edition, <i>Refactoring Unified</i>).</p>
+
+    <a class="backfeed" href="../index.html#feed">← Back to the feed</a>
+  </div>
+</article>
+
+<footer class="foot">
+  <div class="foot-inner">
+    <a class="logo" href="../index.html" style="font-size:16px"><span class="spark" style="width:24px;height:24px;font-size:13px">🔥</span>Hotpath</a>
+    <div class="foot-spacer"></div>
+    <span>Written by @ierofantis</span>
+  </div>
+</footer>
+
+</body>
+</html>

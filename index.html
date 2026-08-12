@@ -30,7 +30,7 @@
 <div class="layout">
 
   <main class="feed feed-plain" id="feed">
-    <div class="feed-head"><h2>Latest posts</h2></div>
+    <div class="feed-head"><h2>Latest posts</h2><input id="q" class="search" type="search" placeholder="Search posts…" aria-label="Search posts"></div>
     <div class="grid" id="grid"></div>
     <div class="feed-end" id="sentinel">Loading posts…</div>
     <noscript>
@@ -111,9 +111,10 @@
 <script>
 /* Lazy-loaded feed: render cards in batches as the sentinel scrolls into view. */
 (function () {
-  var BATCH = 6, shown = 0, items = [];
+  var BATCH = 6, shown = 0, all = [], view = [];
   var grid = document.getElementById('grid');
   var sentinel = document.getElementById('sentinel');
+  var qbox = document.getElementById('q');
   var esc = function (s) { return String(s == null ? '' : s); };
 
   function cardHTML(a) {
@@ -130,24 +131,42 @@
   }
 
   function renderNext() {
-    var next = items.slice(shown, shown + BATCH);
+    var next = view.slice(shown, shown + BATCH);
     if (!next.length) return;
     grid.insertAdjacentHTML('beforeend', next.map(cardHTML).join(''));
     shown += next.length;
-    if (shown >= items.length) { obs.disconnect(); sentinel.textContent = "You're all caught up."; }
+    if (shown >= view.length) { obs.disconnect(); sentinel.textContent = "You're all caught up."; }
   }
 
   var obs = new IntersectionObserver(function (entries) {
     if (entries[0].isIntersecting) renderNext();
   }, { rootMargin: '600px 0px' });
 
+  function setView(q) {
+    q = (q || '').trim().toLowerCase();
+    view = !q ? all : all.filter(function (a) {
+      var hay = (a.title + ' ' + a.excerpt + ' ' + a.cat + ' ' +
+        (a.tags || []).map(function (t) { return t.label; }).join(' ')).toLowerCase();
+      return hay.indexOf(q) > -1;
+    });
+    shown = 0; grid.innerHTML = ''; obs.disconnect();
+    if (!view.length) { sentinel.textContent = 'No posts match “' + q + '”.'; return; }
+    sentinel.textContent = ''; renderNext(); obs.observe(sentinel);
+  }
+
+  if (qbox) {
+    var t;
+    qbox.addEventListener('input', function () {
+      clearTimeout(t);
+      t = setTimeout(function () { setView(qbox.value); }, 120);
+    });
+  }
+
   fetch('articles.json')
     .then(function (r) { return r.json(); })
     .then(function (data) {
-      items = data || [];
-      sentinel.textContent = '';
-      renderNext();
-      obs.observe(sentinel);
+      all = data || [];
+      setView(qbox ? qbox.value : '');
     })
     .catch(function () {
       sentinel.textContent = '';
