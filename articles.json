@@ -1,0 +1,74 @@
+[
+  {
+    "slug": "cookie-handoff-warmup",
+    "cover": "cv-shield", "emoji": "🍪", "cat": "Systems",
+    "title": "The cookie handoff: let a browser solve it, then let curl fly",
+    "excerpt": "An HTTP client cannot run JavaScript, yet a warmup beats defenses that demand it. The trick is splitting the work: a browser solves once, a fast client replays.",
+    "tags": [{"label": "Web Scraping", "cls": "t-blue"}, {"label": "Anti-Bot"}, {"label": "Browsers"}],
+    "read": "7 min read", "note": "Adapted from <i>The Quiet Fetch</i>"
+  },
+  {
+    "slug": "unmasking-the-origin",
+    "cover": "cv-shield", "emoji": "🕵️", "cat": "Security",
+    "title": "Find your own origin before someone else does",
+    "excerpt": "A CDN only protects you if its shield cannot be walked around. Here is the audit an attacker would run against your origin, so you can run it first. Authorized targets only.",
+    "tags": [{"label": "Security", "cls": "t-blue"}, {"label": "Recon"}, {"label": "DNS"}],
+    "read": "8 min read", "note": "Adapted from <i>The Quiet Fetch</i>"
+  },
+  {
+    "slug": "one-pipeline-three-services",
+    "cover": "cv-build", "emoji": "⚙️", "cat": "Architecture",
+    "title": "Why we split one pipeline into three services",
+    "excerpt": "Fetch, parse, and store are three kinds of work with three resource profiles. One process forces them to share a fate they never shared in nature.",
+    "tags": [{"label": "Architecture", "cls": "t-purple"}, {"label": "Queues"}, {"label": "Scaling"}],
+    "read": "7 min read", "note": "Adapted from <i>Refactoring</i>"
+  },
+  {
+    "slug": "ordered-by-design-sort-contract",
+    "cover": "cv-graph", "emoji": "↕️", "cat": "Databases",
+    "title": "Declare your sort order and delete half your memory",
+    "excerpt": "When producers declare sort order as a contract, consumers can pick a merge over a hash, and the state they must keep collapses from huge to constant.",
+    "tags": [{"label": "Databases", "cls": "t-green"}, {"label": "SQL"}, {"label": "Streaming"}],
+    "read": "8 min read", "note": "From <i>Ordered by Design</i>"
+  },
+  {
+    "slug": "grapple-dojo-grappling-chess",
+    "cover": "cv-fire", "emoji": "🥋", "cat": "Game Dev",
+    "title": "Grapple Dojo: turning a grappling database into a turn-based game",
+    "excerpt": "Grappling chess, built on GrappleMap: 843 real positions, 1,485 transitions, 3D stick figures, and a duel where you spot the real technique among decoys.",
+    "tags": [{"label": "Side Project", "cls": "t-orange"}, {"label": "Three.js"}, {"label": "Multiplayer"}],
+    "read": "8 min read", "note": "Side project"
+  },
+  {
+    "slug": "scrapers-six-surfaces",
+    "cover": "cv-shield", "emoji": "🛡️", "cat": "Systems",
+    "title": "Why your scraper gets blocked: the six surfaces",
+    "excerpt": "A correct User-Agent is not a disguise. Cloudflare and Akamai read six layers at once, and only about a fifth of them travel as bytes you control. Here is the whole stack.",
+    "tags": [{"label": "Web Scraping", "cls": "t-blue"}, {"label": "Anti-Bot"}, {"label": "TLS"}],
+    "read": "9 min read", "note": "Adapted from <i>The Quiet Fetch</i>"
+  },
+  {
+    "slug": "stack-panic-call-stack-furnace",
+    "cover": "cv-fire", "emoji": "🔥", "cat": "Game Dev",
+    "title": "Stack Panic: I turned the call stack into a furnace",
+    "excerpt": "Real LeetCode problems fall into a furnace on an accelerating timer. Type the missing line or the spawns get permanently faster. Here is how the panic loop is built.",
+    "tags": [{"label": "Side Project", "cls": "t-orange"}, {"label": "JavaScript"}, {"label": "Game Design"}],
+    "read": "7 min read", "note": "Side project"
+  },
+  {
+    "slug": "config-over-code-human-ceiling",
+    "cover": "cv-build", "emoji": "🏗️", "cat": "Architecture",
+    "title": "Config over code, and the ceiling only a machine can raise",
+    "excerpt": "Moving behavior into configuration has a limit, and the limit is human. A language model in the maintenance loop moves that ceiling. It does not remove it.",
+    "tags": [{"label": "Data Pipelines", "cls": "t-purple"}, {"label": "Config"}, {"label": "LLMs"}],
+    "read": "8 min read", "note": "Adapted from <i>Refactoring Unified</i>"
+  },
+  {
+    "slug": "grapplemap-grappling-as-a-graph",
+    "cover": "cv-graph", "emoji": "🥋", "cat": "Graphs",
+    "title": "GrappleMap: modeling grappling as a graph of positions",
+    "excerpt": "A whole martial art as nodes and edges: positions are states, transitions are the moves between them. Notes from hacking on Eelis van der Weegen's GrappleMap.",
+    "tags": [{"label": "Open Source", "cls": "t-green"}, {"label": "C++"}, {"label": "Data Modeling"}],
+    "read": "8 min read", "note": "Deep dive"
+  }
+]

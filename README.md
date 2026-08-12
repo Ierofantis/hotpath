@@ -1,56 +1,64 @@
 # 🔥 Hotpath
 
-A daily.dev-style dev blog by **Ierofantis** — field notes on systems,
-scrapers, and the games in between. Pure static HTML/CSS, zero build, zero dependencies.
+A daily.dev-style dev blog by **Ierofantis** (@ierofantis): field notes on systems,
+scrapers, and the games in between. Static HTML/CSS + a tiny vanilla-JS feed. No build,
+no dependencies, no framework.
 
 ## Structure
 
 ```
 hotpath/
-├── index.html                 # the feed (card grid of all posts)
-├── articles/
-│   ├── scrapers-six-surfaces.html            # from The Quiet Fetch
-│   ├── stack-panic-call-stack-furnace.html   # my game: github.com/Ierofantis/stack_panic
-│   ├── config-over-code-human-ceiling.html   # from Refactoring Unified
-│   └── grapplemap-grappling-as-a-graph.html  # deep dive, credit: Eelis/GrappleMap
-├── assets/
-│   └── style.css              # the whole design system
-├── render.yaml                # Render static-site blueprint
+├── index.html          # homepage: hero, JS-rendered feed, sticky Projects sidebar
+├── articles.json       # feed data — the source of truth for the post list
+├── articles/           # one static .html per post (9 so far)
+├── assets/style.css    # the whole design system
+├── render.yaml         # Render static-site blueprint
 └── README.md
 ```
 
+## How the feed works
+
+The homepage does not hard-code posts. It fetches `articles.json` and renders cards,
+**lazy-loaded 6 at a time** via an `IntersectionObserver` (infinite scroll), so the
+feed stays fast no matter how many posts exist. Each article is a plain static HTML
+file that never changes as the list grows. A `<noscript>` block lists every post for
+no-JS readers and crawlers.
+
 ## Run locally
 
-No server needed. Open `index.html` in a browser, or:
+The feed uses `fetch('articles.json')`, which browsers block on `file://`, so you need
+a local server (opening the file directly shows an empty feed):
 
 ```bash
 python -m http.server 8000    # then visit http://localhost:8000
 ```
 
-## Deploy to Render (static site)
+## Deploy to Render
 
-**Option A — Blueprint (recommended):** push this folder to a Git repo and, in the
-Render dashboard, choose **New → Blueprint**, point it at the repo. `render.yaml`
-does the rest (static, no build, publish `.`).
-
-**Option B — Manual:** Render dashboard → **New → Static Site** → connect the repo →
-- **Root Directory:** `hotpath` (only if this folder is a subdirectory of the repo)
-- **Build Command:** *(leave empty)*
-- **Publish Directory:** `.`
-
-That's it. Render serves the files directly; every push redeploys.
+**Static Site (simplest):** dashboard → New → Static Site → connect the repo →
+Build Command empty, Publish Directory `.`. Every push redeploys.
+**Blueprint:** New → Blueprint uses `render.yaml` (same result).
 
 ## Adding a new post
 
 Use the **hotpath-writer** skill (`/hotpath-writer`), or by hand:
-1. Copy any file in `articles/` as a template.
-2. Write the post, keep the byline and footer.
-3. Add a `<a class="card">…</a>` block to the grid in `index.html`.
-   Cover classes: `cv-fire` (games), `cv-graph` (data/graphs), `cv-shield`
-   (scraping/systems), `cv-build` (architecture).
+1. Write `articles/<kebab-slug>.html` (copy any existing article as a template; keep
+   the byline `@ierofantis` and footer).
+2. **Prepend one entry** to `articles.json` (newest first):
+   ```json
+   { "slug": "kebab-slug", "cover": "cv-shield", "emoji": "🛡️", "cat": "Systems",
+     "title": "...", "excerpt": "...",
+     "tags": [{"label":"Primary","cls":"t-blue"},{"label":"Tag"}],
+     "read": "N min read", "note": "Adapted from <i>Book</i>" }
+   ```
+   Cover / tag palette: `cv-fire`+`t-orange` (games), `cv-graph`+`t-green` (data),
+   `cv-shield`+`t-blue` (scraping/systems), `cv-build`+`t-purple` (architecture).
+
+No `index.html` edit needed for a post. Only the Projects sidebar (in `index.html`) is
+hand-maintained.
 
 ## Attribution
 
-- **Stack Panic** is mine — [github.com/Ierofantis/stack_panic](https://github.com/Ierofantis/stack_panic).
-- **GrappleMap** is by **Eelis van der Weegen** — [github.com/Eelis/GrappleMap](https://github.com/Eelis/GrappleMap) · [eel.is/GrappleMap](http://eel.is/GrappleMap/). The article is a deep dive, not a claim of authorship.
-- The systems articles are distilled from my books *The Quiet Fetch* and *Refactoring Unified*.
+- **Stack Panic** and **Grapple Dojo** are mine — [github.com/Ierofantis](https://github.com/Ierofantis).
+- **GrappleMap** is by **Eelis van der Weegen** — [github.com/Eelis/GrappleMap](https://github.com/Eelis/GrappleMap) · [eel.is/GrappleMap](http://eel.is/GrappleMap/). Grapple Dojo builds on its public-domain data; the deep-dive article is not a claim of authorship.
+- Systems posts are distilled from my books *The Quiet Fetch*, *Refactoring Unified*, and *Ordered by Design* ([book](https://teopanta.gumroad.com/l/ordered_by_design)).

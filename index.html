@@ -31,99 +31,21 @@
 
   <main class="feed feed-plain" id="feed">
     <div class="feed-head"><h2>Latest posts</h2></div>
-    <div class="grid">
-
-      <a class="card" href="articles/cookie-handoff-warmup.html">
-        <div class="cover cv-shield"><span class="cat">Systems</span>🍪</div>
-        <div class="card-body">
-          <div class="tags"><span class="tag t-blue">Web Scraping</span><span class="tag">Anti-Bot</span><span class="tag">Browsers</span></div>
-          <h3>The cookie handoff: let a browser solve it, then let curl fly</h3>
-          <p class="excerpt">An HTTP client cannot run JavaScript, yet a warmup beats defenses that demand it. The trick is splitting the work: a browser solves once, a fast client replays.</p>
-          <div class="meta"><span class="av">I</span> 7 min read <span class="dot"></span> Adapted from <i>The Quiet Fetch</i></div>
-        </div>
-      </a>
-
-      <a class="card" href="articles/unmasking-the-origin.html">
-        <div class="cover cv-shield"><span class="cat">Security</span>🕵️</div>
-        <div class="card-body">
-          <div class="tags"><span class="tag t-blue">Security</span><span class="tag">Recon</span><span class="tag">DNS</span></div>
-          <h3>Find your own origin before someone else does</h3>
-          <p class="excerpt">A CDN only protects you if its shield cannot be walked around. Here is the audit an attacker would run against your origin, so you can run it first. Authorized targets only.</p>
-          <div class="meta"><span class="av">I</span> 8 min read <span class="dot"></span> Adapted from <i>The Quiet Fetch</i></div>
-        </div>
-      </a>
-
-      <a class="card" href="articles/one-pipeline-three-services.html">
-        <div class="cover cv-build"><span class="cat">Architecture</span>⚙️</div>
-        <div class="card-body">
-          <div class="tags"><span class="tag t-purple">Architecture</span><span class="tag">Queues</span><span class="tag">Scaling</span></div>
-          <h3>Why we split one pipeline into three services</h3>
-          <p class="excerpt">Fetch, parse, and store are three kinds of work with three resource profiles. One process forces them to share a fate they never shared in nature.</p>
-          <div class="meta"><span class="av">I</span> 7 min read <span class="dot"></span> Adapted from <i>Refactoring</i></div>
-        </div>
-      </a>
-
-      <a class="card" href="articles/ordered-by-design-sort-contract.html">
-        <div class="cover cv-graph"><span class="cat">Databases</span>↕️</div>
-        <div class="card-body">
-          <div class="tags"><span class="tag t-green">Databases</span><span class="tag">SQL</span><span class="tag">Streaming</span></div>
-          <h3>Declare your sort order and delete half your memory</h3>
-          <p class="excerpt">When producers declare sort order as a contract, consumers can pick a merge over a hash, and the state they must keep collapses from huge to constant.</p>
-          <div class="meta"><span class="av">I</span> 8 min read <span class="dot"></span> From <i>Ordered by Design</i></div>
-        </div>
-      </a>
-
-      <a class="card" href="articles/grapple-dojo-grappling-chess.html">
-        <div class="cover cv-fire"><span class="cat">Game Dev</span>🥋</div>
-        <div class="card-body">
-          <div class="tags"><span class="tag t-orange">Side Project</span><span class="tag">Three.js</span><span class="tag">Multiplayer</span></div>
-          <h3>Grapple Dojo: turning a grappling database into a turn-based game</h3>
-          <p class="excerpt">Grappling chess, built on GrappleMap: 843 real positions, 1,485 transitions, 3D stick figures, and a duel where you spot the real technique among decoys.</p>
-          <div class="meta"><span class="av">I</span> 8 min read <span class="dot"></span> Side project</div>
-        </div>
-      </a>
-
-      <a class="card" href="articles/scrapers-six-surfaces.html">
-        <div class="cover cv-shield"><span class="cat">Systems</span>🛡️</div>
-        <div class="card-body">
-          <div class="tags"><span class="tag t-blue">Web Scraping</span><span class="tag">Anti-Bot</span><span class="tag">TLS</span></div>
-          <h3>Why your scraper gets blocked: the six surfaces</h3>
-          <p class="excerpt">A correct User-Agent is not a disguise. Cloudflare and Akamai read six layers at once, and only about a fifth of them travel as bytes you control. Here is the whole stack.</p>
-          <div class="meta"><span class="av">I</span> 9 min read <span class="dot"></span> Adapted from <i>The Quiet Fetch</i></div>
-        </div>
-      </a>
-
-      <a class="card" href="articles/stack-panic-call-stack-furnace.html">
-        <div class="cover cv-fire"><span class="cat">Game Dev</span>🔥</div>
-        <div class="card-body">
-          <div class="tags"><span class="tag t-orange">Side Project</span><span class="tag">JavaScript</span><span class="tag">Game Design</span></div>
-          <h3>Stack Panic: I turned the call stack into a furnace</h3>
-          <p class="excerpt">Real LeetCode problems fall into a furnace on an accelerating timer. Type the missing line or the spawns get permanently faster. Here is how the panic loop is built.</p>
-          <div class="meta"><span class="av">I</span> 7 min read <span class="dot"></span> Side project</div>
-        </div>
-      </a>
-
-      <a class="card" href="articles/config-over-code-human-ceiling.html">
-        <div class="cover cv-build"><span class="cat">Architecture</span>🏗️</div>
-        <div class="card-body">
-          <div class="tags"><span class="tag t-purple">Data Pipelines</span><span class="tag">Config</span><span class="tag">LLMs</span></div>
-          <h3>Config over code, and the ceiling only a machine can raise</h3>
-          <p class="excerpt">Moving behavior into configuration has a limit, and the limit is human. A language model in the maintenance loop moves that ceiling. It does not remove it.</p>
-          <div class="meta"><span class="av">I</span> 8 min read <span class="dot"></span> Adapted from <i>Refactoring Unified</i></div>
-        </div>
-      </a>
-
-      <a class="card" href="articles/grapplemap-grappling-as-a-graph.html">
-        <div class="cover cv-graph"><span class="cat">Graphs</span>🥋</div>
-        <div class="card-body">
-          <div class="tags"><span class="tag t-green">Open Source</span><span class="tag">C++</span><span class="tag">Data Modeling</span></div>
-          <h3>GrappleMap: modeling grappling as a graph of positions</h3>
-          <p class="excerpt">A whole martial art as nodes and edges: positions are states, transitions are the moves between them. Notes from hacking on Eelis van der Weegen's GrappleMap.</p>
-          <div class="meta"><span class="av">I</span> 8 min read <span class="dot"></span> Deep dive</div>
-        </div>
-      </a>
-
-    </div>
+    <div class="grid" id="grid"></div>
+    <div class="feed-end" id="sentinel">Loading posts…</div>
+    <noscript>
+      <ul class="nojs-list">
+        <li><a href="articles/cookie-handoff-warmup.html">The cookie handoff: let a browser solve it, then let curl fly</a></li>
+        <li><a href="articles/unmasking-the-origin.html">Find your own origin before someone else does</a></li>
+        <li><a href="articles/one-pipeline-three-services.html">Why we split one pipeline into three services</a></li>
+        <li><a href="articles/ordered-by-design-sort-contract.html">Declare your sort order and delete half your memory</a></li>
+        <li><a href="articles/grapple-dojo-grappling-chess.html">Grapple Dojo: turning a grappling database into a turn-based game</a></li>
+        <li><a href="articles/scrapers-six-surfaces.html">Why your scraper gets blocked: the six surfaces</a></li>
+        <li><a href="articles/stack-panic-call-stack-furnace.html">Stack Panic: I turned the call stack into a furnace</a></li>
+        <li><a href="articles/config-over-code-human-ceiling.html">Config over code, and the ceiling only a machine can raise</a></li>
+        <li><a href="articles/grapplemap-grappling-as-a-graph.html">GrappleMap: modeling grappling as a graph of positions</a></li>
+      </ul>
+    </noscript>
   </main>
 
   <aside class="side" id="projects">
@@ -185,6 +107,54 @@
     <a href="https://github.com/Ierofantis" target="_blank" rel="noopener">GitHub</a>
   </div>
 </footer>
+
+<script>
+/* Lazy-loaded feed: render cards in batches as the sentinel scrolls into view. */
+(function () {
+  var BATCH = 6, shown = 0, items = [];
+  var grid = document.getElementById('grid');
+  var sentinel = document.getElementById('sentinel');
+  var esc = function (s) { return String(s == null ? '' : s); };
+
+  function cardHTML(a) {
+    var tags = (a.tags || []).map(function (t) {
+      return '<span class="tag ' + (t.cls || '') + '">' + esc(t.label) + '</span>';
+    }).join('');
+    return '<a class="card" href="articles/' + esc(a.slug) + '.html">' +
+      '<div class="cover ' + esc(a.cover) + '"><span class="cat">' + esc(a.cat) + '</span>' + esc(a.emoji) + '</div>' +
+      '<div class="card-body"><div class="tags">' + tags + '</div>' +
+      '<h3>' + esc(a.title) + '</h3>' +
+      '<p class="excerpt">' + esc(a.excerpt) + '</p>' +
+      '<div class="meta"><span class="av">I</span> ' + esc(a.read) + ' <span class="dot"></span> ' + esc(a.note) + '</div>' +
+      '</div></a>';
+  }
+
+  function renderNext() {
+    var next = items.slice(shown, shown + BATCH);
+    if (!next.length) return;
+    grid.insertAdjacentHTML('beforeend', next.map(cardHTML).join(''));
+    shown += next.length;
+    if (shown >= items.length) { obs.disconnect(); sentinel.textContent = "You're all caught up."; }
+  }
+
+  var obs = new IntersectionObserver(function (entries) {
+    if (entries[0].isIntersecting) renderNext();
+  }, { rootMargin: '600px 0px' });
+
+  fetch('articles.json')
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      items = data || [];
+      sentinel.textContent = '';
+      renderNext();
+      obs.observe(sentinel);
+    })
+    .catch(function () {
+      sentinel.textContent = '';
+      grid.innerHTML = '<p style="color:var(--muted)">Could not load posts. If viewing locally, serve over http (e.g. python -m http.server), not file://.</p>';
+    });
+})();
+</script>
 
 </body>
 </html>

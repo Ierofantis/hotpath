@@ -117,6 +117,13 @@ a{color:inherit;text-decoration:none}
 .side-note{font-size:12.5px;color:var(--muted);line-height:1.5}
 .side-note a{color:var(--accent);font-weight:600}
 
+/* lazy-feed sentinel + no-JS fallback */
+.feed-end{min-height:56px;display:grid;place-items:center;color:var(--faint);font-size:13px;padding:22px 0}
+.nojs-list{margin:16px 2px;padding-left:20px;color:var(--muted)}
+.nojs-list li{margin:8px 0}
+.nojs-list a{color:var(--text);font-weight:600}
+.nojs-list a:hover{color:var(--accent)}
+
 @media(max-width:900px){
   .layout{grid-template-columns:1fr;gap:22px}
   .side-inner{position:static}
