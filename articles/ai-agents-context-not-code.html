@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI coding agents don't have a code problem, they have a context problem · Hotpath</title>
+<meta name="description" content="2026's agents plan, code, test, and deploy on their own. The bottleneck moved from generating code to feeding the agent the right context and validating what comes back.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a class="logo" href="../index.html"><span class="spark">🔥</span>Hot<span class="path">path</span></a>
+    <div class="nav-spacer"></div>
+    <a class="nav-link" href="../index.html#feed">Latest</a>
+    <a class="nav-link" href="https://github.com/Ierofantis" target="_blank" rel="noopener">GitHub</a>
+    <a class="nav-cta" href="../index.html#feed">Read the feed</a>
+  </div>
+</header>
+
+<article class="article">
+  <div class="crumbs"><a href="../index.html">Hotpath</a> / AI &middot; <span style="color:var(--accent)">Trending</span></div>
+  <h1>AI coding agents don't have a code problem, they have a context problem</h1>
+  <p class="sub">The 2026 shift is from chat to agency: tools that plan, code, test, and deploy with little supervision. The thing that decides whether they help or hurt is not code generation. It is context and validation.</p>
+  <div class="byline"><span class="avatar">I</span> Ierofantis &middot; 7 min read &middot; on a current trend</div>
+
+  <div class="artcover cv-build">🤖</div>
+
+  <div class="prose">
+    <p>The story in 2026 is that coding assistants stopped waiting to be asked. They plan multi-step work, write it, run the tests, and open the deploy, some in your terminal, some in your editor, some entirely in the cloud. It is genuinely useful. It is also where a lot of teams are quietly getting burned, and the reason is not that the models write bad code. On a well-scoped task they write fine code. The failures cluster somewhere else.</p>
+
+    <h2>Generation was never the bottleneck</h2>
+    <p>Watch where an agent actually goes wrong and it is rarely a syntax or algorithm miss. It is a wrong assumption about the system: an interface it did not see, a constraint nobody wrote down, a convention that lives in one senior engineer's head. The agent produced correct code for the wrong world. That is a <strong>context</strong> failure, not a coding one, and throwing a smarter model at it does not fix it, because the model was never given the thing it needed.</p>
+
+    <div class="callout"><b>The reframe:</b> an agent is only as good as the context you can hand it and the validation you can run on what it hands back. Both of those are your job, not the model's.</div>
+
+    <h2>Validation is the load-bearing wall</h2>
+    <p>I wrote a whole <a href="config-over-code-human-ceiling.html">piece on letting a language model maintain production configuration</a>, and the lesson transfers directly. When a machine drafts something that will run in production, the safety does not come from trusting the machine. It comes from checking every draft against real, retained input before it takes effect, and degrading a failed check into an alert rather than a change. Confidence is manufactured by the validation, not inherited from the author, which is exactly what lets the author be a model whose reasoning you cannot fully audit.</p>
+    <p>An autonomous agent raises the stakes of that principle, it does not repeal it. More autonomy means more drafts reaching production faster, which means the validation gate has to be stronger and more automatic, not weaker. An agent with a great model and no gate is a faster way to ship a plausible mistake.</p>
+
+    <h2>What actually helps</h2>
+    <ul>
+      <li><strong>Curate the context.</strong> The highest-leverage work is assembling what the agent sees: the relevant interfaces, the constraints, the conventions, the failing input. That is engineering, and it is where the wins are.</li>
+      <li><strong>Gate the output.</strong> Tests, type checks, and validation against real data are the thing that makes autonomy safe. Build them before you turn the autonomy up.</li>
+      <li><strong>Keep a human accountable.</strong> The one thing you cannot delegate to a maintainer you cannot call into a review after an incident is accountability for the outcome.</li>
+    </ul>
+
+    <h2>The takeaway</h2>
+    <p>Agentic coding is real and worth adopting, but the leverage is not in the generation, which is largely solved. It is in the two things around it: the context you feed in and the validation you run on the way out. Get those right and the agent is a force multiplier. Skip them and you have automated the production of confident, well-formatted wrong answers.</p>
+
+    <div class="srcbox">
+      <span class="lbl">Source &amp; related</span>
+      <a class="srclink" href="https://resources.anthropic.com/hubfs/2026%20Agentic%20Coding%20Trends%20Report.pdf" target="_blank" rel="noopener">→ Anthropic: 2026 Agentic Coding Trends</a>
+      <a class="srclink" href="config-over-code-human-ceiling.html">→ The validation principle, in depth</a>
+    </div>
+
+    <p class="endnote">A take on a current trend, grounded in the same idea that runs through my book work: a machine can draft, but validation and a human own the result.</p>
+
+    <a class="backfeed" href="../index.html#feed">← Back to the feed</a>
+  </div>
+</article>
+
+<footer class="foot">
+  <div class="foot-inner">
+    <a class="logo" href="../index.html" style="font-size:16px"><span class="spark" style="width:24px;height:24px;font-size:13px">🔥</span>Hotpath</a>
+    <div class="foot-spacer"></div>
+    <span>Written by @ierofantis</span>
+  </div>
+</footer>
+
+</body>
+</html>

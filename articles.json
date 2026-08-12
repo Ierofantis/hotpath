@@ -1,5 +1,37 @@
 [
   {
+    "slug": "postgres-as-your-queue",
+    "cover": "cv-build", "emoji": "🐘", "cat": "Backend",
+    "title": "You probably don't need Redis: Postgres as your job queue",
+    "excerpt": "The 2026 revival of \"just use Postgres\" is not hype. SKIP LOCKED for queues, LISTEN/NOTIFY for pub/sub, UNLOGGED tables for cache: the database you already run covers most of what you reach for Redis to do.",
+    "tags": [{"label": "Trendy", "cls": "t-trendy"}, {"label": "Postgres"}, {"label": "Queues"}],
+    "read": "7 min read", "note": "Trending &middot; Postgres for everything"
+  },
+  {
+    "slug": "ai-agents-context-not-code",
+    "cover": "cv-build", "emoji": "🤖", "cat": "AI",
+    "title": "AI coding agents don't have a code problem, they have a context problem",
+    "excerpt": "2026's agents plan, code, test, and deploy on their own. The bottleneck moved from writing code to feeding them the right context and validating what comes back. Autonomy without a gate ships confident mistakes.",
+    "tags": [{"label": "Trendy", "cls": "t-trendy"}, {"label": "AI Agents"}, {"label": "LLMs"}],
+    "read": "7 min read", "note": "Trending &middot; agentic coding"
+  },
+  {
+    "slug": "agents-branch-your-database",
+    "cover": "cv-graph", "emoji": "🌱", "cat": "Data",
+    "title": "Before an agent touches production, give it a branch of the database",
+    "excerpt": "Agents happily write and run schema migrations now. Point one at production directly and you have automated your worst outage. Give it an isolated branch, validate, then merge.",
+    "tags": [{"label": "Trendy", "cls": "t-trendy"}, {"label": "Databases"}, {"label": "AI Agents"}],
+    "read": "7 min read", "note": "Trending &middot; database branching"
+  },
+  {
+    "slug": "fuzzy-matching-product-names",
+    "cover": "cv-graph", "emoji": "🧩", "cat": "Data",
+    "title": "Fuzzy matching product names: Levenshtein, token scorers, and why you layer them",
+    "excerpt": "You scraped a product page with no barcode. Match its URL slug to a million-row catalog by meaning, not spelling: edit distance as the floor, token scorers on top, candidates narrowed first.",
+    "tags": [{"label": "Data Matching", "cls": "t-green"}, {"label": "Python"}, {"label": "Algorithms"}],
+    "read": "9 min read", "note": "From my scraping stack"
+  },
+  {
     "slug": "why-akamai-is-harder-than-cloudflare",
     "cover": "cv-shield", "emoji": "🧱", "cat": "Systems",
     "title": "Why Akamai is harder than Cloudflare",

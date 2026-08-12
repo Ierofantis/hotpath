@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Before an agent touches production, give it a branch of the database · Hotpath</title>
+<meta name="description" content="2026's autonomous agents run schema migrations and data fixes on their own. Point them at production directly and you have built a footgun. Branch the database first.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a class="logo" href="../index.html"><span class="spark">🔥</span>Hot<span class="path">path</span></a>
+    <div class="nav-spacer"></div>
+    <a class="nav-link" href="../index.html#feed">Latest</a>
+    <a class="nav-link" href="https://github.com/Ierofantis" target="_blank" rel="noopener">GitHub</a>
+    <a class="nav-cta" href="../index.html#feed">Read the feed</a>
+  </div>
+</header>
+
+<article class="article">
+  <div class="crumbs"><a href="../index.html">Hotpath</a> / Data &middot; <span style="color:var(--accent)">Trending</span></div>
+  <h1>Before an agent touches production, give it a branch of the database</h1>
+  <p class="sub">2026's agents happily write and run schema migrations and data fixes. Point one straight at your production database and you have automated the worst outage you will ever have. There is a safer default.</p>
+  <div class="byline"><span class="avatar">I</span> Ierofantis &middot; 7 min read &middot; on a current trend</div>
+
+  <div class="artcover cv-graph">🌱</div>
+
+  <div class="prose">
+    <p>The most useful and most terrifying thing agents learned to do this year is operate on databases: propose a schema change, write the migration, run the data backfill. Useful, because that work is tedious and error-prone by hand. Terrifying, because a migration is not a pull request you can revert with a click. Run the wrong <code>UPDATE</code> without a <code>WHERE</code> against production and there is no undo, only a restore and an apology.</p>
+
+    <h2>The pattern the industry is converging on</h2>
+    <p>The answer taking shape in 2026 is database branching: give the agent an isolated, cheap copy of the database, let it do its worst there, validate the result, and only then apply the change to production, usually through a normal human-reviewed merge. It is the same instinct that made us stop editing production files over SSH and start using version control, applied to the thing we were still editing live: the data.</p>
+
+    <div class="callout"><b>The principle:</b> an agent should never be one typo away from an irreversible production change. Put an isolated branch and a validation step between the agent's autonomy and anything you cannot undo.</div>
+
+    <h2>Why a branch and not just a staging database</h2>
+    <p>A shared staging database is better than nothing, but it fails the moment two agents, or an agent and a person, work at once: they collide, and the environment drifts from production. A per-task branch is isolated and disposable. The agent gets a database that looks like production as of now, runs its migration and backfill against real-shaped data, and you compare the before and after on that branch. If it is wrong, you throw the branch away and nothing real was touched. If it is right, you promote it.</p>
+
+    <h2>What "validate" means here</h2>
+    <p>Branching gives you a safe place to run the change. It does not tell you the change is correct. That still needs a gate: row counts before and after, invariants that must hold, a diff of the affected rows, the application's own tests run against the branched data. The branch is where the agent acts; the validation is what earns the promotion. Neither replaces the other, and skipping the second because the first felt safe is how a clean-looking migration quietly corrupts a column.</p>
+
+    <h2>The takeaway</h2>
+    <p>If you are letting agents near your database, and in 2026 you probably are, make the safe path the default one. An isolated branch to act on, a validation gate to earn promotion, and a human on the merge. Autonomy is fine when the blast radius is a disposable copy. It is not fine when the blast radius is the only copy you have.</p>
+
+    <div class="srcbox">
+      <span class="lbl">Source &amp; related</span>
+      <a class="srclink" href="https://www.softwareseni.com/how-postgres-became-the-ai-agent-substrate-for-memory-branching-and-modern-hosting/" target="_blank" rel="noopener">→ On Postgres as an agent substrate &amp; branching</a>
+      <a class="srclink" href="ai-agents-context-not-code.html">→ Why agents need guardrails, not just models</a>
+    </div>
+
+    <p class="endnote">A take on a current trend, from someone who has restored a production database at a bad hour and would like you to never have to.</p>
+
+    <a class="backfeed" href="../index.html#feed">← Back to the feed</a>
+  </div>
+</article>
+
+<footer class="foot">
+  <div class="foot-inner">
+    <a class="logo" href="../index.html" style="font-size:16px"><span class="spark" style="width:24px;height:24px;font-size:13px">🔥</span>Hotpath</a>
+    <div class="foot-spacer"></div>
+    <span>Written by @ierofantis</span>
+  </div>
+</footer>
+
+</body>
+</html>

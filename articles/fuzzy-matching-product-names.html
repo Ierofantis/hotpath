@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fuzzy matching product names: Levenshtein, token scorers, and why you layer them · Hotpath</title>
+<meta name="description" content="You scraped a product page with no barcode. Match its URL slug to a million-row catalog by meaning, not spelling: edit distance as the floor, token scorers on top, candidates narrowed first.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a class="logo" href="../index.html"><span class="spark">🔥</span>Hot<span class="path">path</span></a>
+    <div class="nav-spacer"></div>
+    <a class="nav-link" href="../index.html#feed">Latest</a>
+    <a class="nav-link" href="https://github.com/Ierofantis" target="_blank" rel="noopener">GitHub</a>
+    <a class="nav-cta" href="../index.html#feed">Read the feed</a>
+  </div>
+</header>
+
+<article class="article">
+  <div class="crumbs"><a href="../index.html">Hotpath</a> / Data</div>
+  <h1>Fuzzy matching product names: Levenshtein, token scorers, and why you layer them</h1>
+  <p class="sub">You scraped a product page and there is no barcode, no shared id, nothing but a URL slug. Now match it to the right row in a catalog of a million product names. This is how, and why one scorer is never enough.</p>
+  <div class="byline"><span class="avatar">I</span> Ierofantis &middot; 9 min read &middot; from my scraping stack</div>
+
+  <div class="artcover cv-graph">🧩</div>
+
+  <div class="prose">
+    <p>Half of real-world scraping is not fetching the page. It is joining what you fetched to what you already have. When a page carries an EAN or a shared identifier, the join is exact and boring. When it does not, you are left holding a URL slug like <code>samsung-galaxy-s21-128gb-gray</code> and a catalog of product names, and you have to decide which name that slug means. The names are written a dozen ways: words reordered, sizes and colours appended, the brand moved to the front. Exact string equality is useless here. You need to score by <em>meaning</em>, not by literal spelling.</p>
+
+    <h2>The honest floor: edit distance</h2>
+    <p>Levenshtein distance is the number of single-character edits, insert, delete, or substitute, needed to turn one string into another. Turning <code>galaxie</code> into <code>galaxy</code> costs two: substitute the <code>i</code> for a <code>y</code>, delete the trailing <code>e</code>. It is pure mechanics, no notion of words, and it is the honest foundation everything else sits on, because it counts real changes.</p>
+    <p>You compute it as a dynamic-programming matrix. Each cell is the cost to align the two prefixes up to that point, filled from three already-solved neighbors, and the bottom-right cell is the answer.</p>
+    <pre><code>cost = min(
+    above + 1,                    # delete
+    left  + 1,                    # insert
+    diag  + (0 if a == b else 1)  # substitute
+)
+
+    ""  g  a  l  a  x  y
+"" | 0  1  2  3  4  5  6
+ g | 1  0  1  2  3  4  5
+ a | 2  1  0  1  2  3  4
+ l | 3  2  1  0  1  2  3
+ a | 4  3  2  1  0  1  2
+ x | 5  4  3  2  1  0  1
+ i | 6  5  4  3  2  1  1
+ e | 7  6  5  4  3  2  2   &lt;- galaxie vs galaxy = 2</code></pre>
+    <p>The shared <code>galax</code> rides the diagonal at zero cost; only the <code>i to y</code> substitution and the deleted <code>e</code> cost anything. Why the matrix and not the obvious recursion? Because trying every alignment branches three ways per character, which is exponential and re-solves the same sub-comparisons millions of times. The matrix is O(n times m), each cell filled once in constant time. Brute force is correct but slow, greedy is fast but wrong, and dynamic programming is the only approach that is both.</p>
+
+    <h2>From distance to a score</h2>
+    <p>Distance is an integer that grows with string length, so you scale it to a similarity percent: <code>ratio = (1 - dist / (len_a + len_b)) * 100</code>. A hundred is identical, zero is nothing shared. This raw ratio is where most people stop, and it is where most people get bad matches, because it compares the whole string in order.</p>
+
+    <pre><code>cat = "galaxy"             url = "galaxie"                 (a typo, distance 2)
+  ratio 85    token_set 85    partial_token_set 85     -> all three agree
+
+cat = "samsung galaxy s21"  url = "galaxy s21 samsung 128gb gray"
+  ratio 55    token_set 78    partial_token_set 100    -> only tokens survive</code></pre>
+
+    <p>One word with a typo, and every method agrees: edit distance carries it. Reorder the words and staple on <code>128gb gray</code>, and the raw ratio collapses to a number that would reject a correct match, even though a human reads them as the same product instantly.</p>
+
+    <h2>The scorer ladder</h2>
+    <p>The fix is a ladder of scorers, each removing a kind of noise the previous one still trips over:</p>
+    <ul>
+      <li><strong>ratio</strong>: raw edit distance on the whole string, order-sensitive. The floor.</li>
+      <li><strong>token_set</strong>: split each name into a set of words, drop order and duplicates, compare the shared vocabulary. Now <code>samsung galaxy</code> equals <code>galaxy samsung</code>.</li>
+      <li><strong>partial_token_set</strong>: the same word-set idea, but scored on the best-overlapping window, so trailing variant junk like <code>128gb</code> or <code>dual-sim</code> stops dragging the score down.</li>
+    </ul>
+
+    <div class="callout"><b>The mental model:</b> edit distance counts the real changes. The token scorers sit on top and decide which changes you agree to ignore. The most forgiving scorer catches the most, so it also lies the most, which is why you fence it.</div>
+
+    <h2>Scoring a million rows is the wrong instinct</h2>
+    <p>Here is the part the algorithm talk skips: you cannot run a scorer against every catalog row for every scraped URL. That is a million comparisons per page. The scorer is the last step, not the first. The real pipeline narrows hard before it ever scores:</p>
+    <pre><code>def normalize(text):
+    s = unidecode(text).lower()
+    return re.sub(r"[^a-z0-9]+", " ", s)
+
+# narrow: rarest tokens first, cap the candidate set
+cands = candidate_idxs(url_tokens)[:200]
+cands = [i for i in cands
+         if shared(url, prod[i]) &gt;= MIN_SHARED
+         and (not REQ_BRAND or brand[i] &amp; url_tokens)]
+
+# score only the survivors
+_, score, idx = process.extractOne(
+    url_norm, [NORMS[i] for i in cands],
+    scorer=fuzz.token_set_ratio,
+    score_cutoff=MIN_SCORE)   # 85+</code></pre>
+    <ul>
+      <li><strong>Normalize</strong> with <code>unidecode</code> plus lowercase plus tokenize, so <code>ü</code> and <code>u</code> stop being different characters and punctuation stops mattering.</li>
+      <li><strong>Invert</strong> the catalog: a token points to the product ids that contain it, and common tokens get pruned so <code>the</code> and <code>pro</code> do not drag in the whole catalog.</li>
+      <li><strong>Narrow</strong> using the rarest tokens first and cap the candidate list, here at two hundred, because the rare tokens are the ones that actually identify a product.</li>
+      <li><strong>Score</strong> only those survivors against the cutoff.</li>
+      <li><strong>Guard</strong> with a minimum count of shared tokens, and optionally require the brand to appear in the URL, so the forgiving scorer cannot hand you a confident wrong answer.</li>
+    </ul>
+
+    <h2>Fast, and tuned per site</h2>
+    <p>The engine matters at this scale. <code>rapidfuzz</code> is the same Levenshtein math in C++, ten to a hundred times faster than the older <code>fuzzywuzzy</code>, and MIT-licensed rather than GPL, which is what makes scoring against million-row catalogs and hundreds of thousands of URLs an hour on a few cores actually feasible. And no single scorer or threshold is right for every source: one site's catalog names are longer than its slugs, so <code>token_set</code> wins; another's slugs are full of variant noise, so <code>partial_token_set</code> plus a shared-token guard wins. So the scorer and the thresholds live in per-site config, not in the code.</p>
+
+    <h2>The takeaway</h2>
+    <p>Match by meaning, not spelling. Keep edit distance as the honest floor, layer token scorers to forgive the noise you choose to forgive, and fence the most forgiving one with shared-token and brand guards. Above all, narrow your candidates with an inverted index before you score, because the elegant part of this problem is the scorer and the part that makes it ship is never running it a million times.</p>
+
+    <div class="srcbox">
+      <span class="lbl">Related</span>
+      <a class="srclink" href="scrapers-six-surfaces.html">→ Getting the page in the first place</a>
+      <a class="srclink" href="../index.html#feed">→ More from Hotpath</a>
+    </div>
+
+    <p class="endnote">From the matching layer of my own scraping stack, built on <code>rapidfuzz</code> and <code>unidecode</code>. The technique is generic: any time you join records that share meaning but not an id, this is the shape of the answer.</p>
+
+    <a class="backfeed" href="../index.html#feed">← Back to the feed</a>
+  </div>
+</article>
+
+<footer class="foot">
+  <div class="foot-inner">
+    <a class="logo" href="../index.html" style="font-size:16px"><span class="spark" style="width:24px;height:24px;font-size:13px">🔥</span>Hotpath</a>
+    <div class="foot-spacer"></div>
+    <span>Written by @ierofantis</span>
+  </div>
+</footer>
+
+</body>
+</html>

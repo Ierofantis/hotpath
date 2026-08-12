@@ -43,7 +43,8 @@ a{color:inherit;text-decoration:none}
 @media(max-width:640px){.search{margin-left:0;width:100%}}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:20px}
 
-.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column;transition:transform .15s ease,border-color .15s ease,box-shadow .15s ease}
+@keyframes cardIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column;transition:transform .15s ease,border-color .15s ease,box-shadow .15s ease;animation:cardIn .4s ease both}
 .card:hover{transform:translateY(-4px);border-color:#3a3a48;box-shadow:0 18px 40px rgba(0,0,0,.4)}
 .cover{position:relative;height:150px;display:grid;place-items:center;font-size:52px;overflow:hidden}
 .cover .cat{position:absolute;left:14px;top:12px;font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.9);background:rgba(0,0,0,.28);padding:5px 9px;border-radius:7px;backdrop-filter:blur(3px)}
@@ -59,6 +60,7 @@ a{color:inherit;text-decoration:none}
 .tag.t-blue{color:var(--blue);border-color:rgba(110,168,254,.3)}
 .tag.t-green{color:var(--green);border-color:rgba(95,208,138,.3)}
 .tag.t-purple{color:var(--purple);border-color:rgba(183,140,255,.3)}
+.tag.t-trendy{background:linear-gradient(135deg,var(--accent),var(--pink));color:#170a06;border-color:transparent;font-weight:800;letter-spacing:.02em}
 .card h3{font-size:19px;font-weight:750;letter-spacing:-.01em;line-height:1.25}
 .card:hover h3{color:var(--accent)}
 .card .excerpt{color:var(--muted);font-size:14px;flex:1}

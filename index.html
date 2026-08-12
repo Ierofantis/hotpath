@@ -136,11 +136,12 @@
     grid.insertAdjacentHTML('beforeend', next.map(cardHTML).join(''));
     shown += next.length;
     if (shown >= view.length) { obs.disconnect(); sentinel.textContent = "You're all caught up."; }
+    else { sentinel.textContent = 'Loading more…'; }
   }
 
   var obs = new IntersectionObserver(function (entries) {
     if (entries[0].isIntersecting) renderNext();
-  }, { rootMargin: '600px 0px' });
+  }, { rootMargin: '200px 0px' });
 
   function setView(q) {
     q = (q || '').trim().toLowerCase();

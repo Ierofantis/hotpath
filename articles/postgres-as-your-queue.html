@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>You probably don't need Redis: Postgres as your job queue · Hotpath</title>
+<meta name="description" content="SKIP LOCKED for job queues, LISTEN/NOTIFY for pub/sub, UNLOGGED tables for cache. The database you already run covers most of what you reach for Redis to do.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a class="logo" href="../index.html"><span class="spark">🔥</span>Hot<span class="path">path</span></a>
+    <div class="nav-spacer"></div>
+    <a class="nav-link" href="../index.html#feed">Latest</a>
+    <a class="nav-link" href="https://github.com/Ierofantis" target="_blank" rel="noopener">GitHub</a>
+    <a class="nav-cta" href="../index.html#feed">Read the feed</a>
+  </div>
+</header>
+
+<article class="article">
+  <div class="crumbs"><a href="../index.html">Hotpath</a> / Backend &middot; <span style="color:var(--accent)">Trending</span></div>
+  <h1>You probably don't need Redis: Postgres as your job queue</h1>
+  <p class="sub">The 2026 revival of "just use Postgres" is not hype. For a job queue, pub/sub, and cache-style writes at moderate scale, the database you already run and back up does the job.</p>
+  <div class="byline"><span class="avatar">I</span> Ierofantis &middot; 7 min read &middot; on a current trend</div>
+
+  <div class="artcover cv-build">🐘</div>
+
+  <div class="prose">
+    <p>There is a reflex, the moment you need a background job queue, to add Redis or a broker. Another service to run, monitor, back up, and keep consistent with the database that holds your actual truth. For a lot of systems that reflex is premature, and the tool that removes it is one you are already running. Postgres grew the primitives for this years ago, and in 2026 people are finally leaning on them.</p>
+
+    <h2>A queue in one clause: SKIP LOCKED</h2>
+    <p>The classic problem with a SQL table as a queue is many workers grabbing the same row. <code>FOR UPDATE SKIP LOCKED</code> solves exactly that: each worker locks and claims a row, and any row already locked by another worker is skipped rather than waited on.</p>
+    <pre><code>-- each worker claims one job; locked rows are skipped, not queued behind
+SELECT id, payload
+FROM   jobs
+WHERE  status = 'queued'
+ORDER  BY created_at
+FOR UPDATE SKIP LOCKED
+LIMIT  1;
+-- then: mark it 'running', do the work, mark it 'done' (or retry).</code></pre>
+    <p>That is a concurrent, fair-ish work queue with no extra infrastructure, transactional with the rest of your data, and visible to every tool you already use to inspect Postgres.</p>
+
+    <div class="callout"><b>The real win is not performance, it is coherence.</b> Your jobs live in the same database as your data, in the same transaction, with the same backups and the same query tools. You deleted a moving part, and moving parts are where incidents live.</div>
+
+    <h2>Pub/sub and cache, same story</h2>
+    <p>Two more Redis reflexes have Postgres answers:</p>
+    <ul>
+      <li><strong>Pub/sub:</strong> <code>LISTEN</code> / <code>NOTIFY</code> gives you lightweight event notification between connections, enough to wake workers the instant a job is enqueued instead of polling on a timer.</li>
+      <li><strong>Cache-style writes:</strong> an <code>UNLOGGED</code> table skips the write-ahead log, trading crash-durability for speed, which is exactly the trade a cache wants.</li>
+    </ul>
+    <p>Between these three, a large fraction of "we need Redis" turns into "we need one more table and one more clause."</p>
+
+    <h2>When to graduate</h2>
+    <p>This is not a claim that Postgres beats a dedicated broker at the top end. It does not. Once your queue throughput starts competing with your database's real workload for connections and I/O, or you need fan-out, partitioned consumers, and multi-day retention, a purpose-built system earns its keep. The honest rule is the same one this blog keeps landing on: do not buy the heavier tool until a measured problem demands it. At moderate scale, the measured problem has not arrived, and the extra service is pure cost.</p>
+
+    <h2>The takeaway</h2>
+    <p>Before you add a broker for a queue, a cache, or a notification bus, check whether the database you already operate can do it with <code>SKIP LOCKED</code>, <code>LISTEN/NOTIFY</code>, and an <code>UNLOGGED</code> table. Often it can, and every service you do not add is a service you never have to operate at three in the morning.</p>
+
+    <div class="srcbox">
+      <span class="lbl">Source &amp; related</span>
+      <a class="srclink" href="https://www.postgresql.org/docs/current/sql-select.html" target="_blank" rel="noopener">→ Postgres docs: FOR UPDATE SKIP LOCKED</a>
+      <a class="srclink" href="one-pipeline-three-services.html">→ Where the queues sit in a pipeline</a>
+    </div>
+
+    <p class="endnote">A take on a current trend, bent toward the pipelines I build. Not sponsored by anyone; just tired of running services I do not need.</p>
+
+    <a class="backfeed" href="../index.html#feed">← Back to the feed</a>
+  </div>
+</article>
+
+<footer class="foot">
+  <div class="foot-inner">
+    <a class="logo" href="../index.html" style="font-size:16px"><span class="spark" style="width:24px;height:24px;font-size:13px">🔥</span>Hotpath</a>
+    <div class="foot-spacer"></div>
+    <span>Written by @ierofantis</span>
+  </div>
+</footer>
+
+</body>
+</html>
