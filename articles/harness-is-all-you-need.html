@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The harness is all you need: an LLM that repairs 1,400 rules and decides nothing — Hotpath</title>
+<meta name="description" content="I put a language model inside a production maintenance pipeline that repairs broken extraction rules. Tripling model size did nothing. Constraining evidence and building a real oracle doubled precision. The model is the least important part.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
+<link rel="stylesheet" href="../assets/style.css"></head><body>
+<header class="nav"><div class="nav-inner">
+  <a class="logo" href="../index.html"><span class="spark">🔥</span>Hot<span class="path">path</span></a>
+  <div class="nav-spacer"></div>
+  <a class="nav-link" href="../index.html#feed">Latest</a>
+  <a class="nav-link" href="https://github.com/Ierofantis" target="_blank" rel="noopener">GitHub</a>
+  <a class="nav-cta" href="../index.html#feed">Read the feed</a>
+</div></header>
+
+<article class="article">
+  <div class="crumbs"><a href="../index.html">Hotpath</a> / AI</div>
+  <h1>The harness is all you need: an LLM that repairs 1,400 rules and decides nothing</h1>
+  <p class="sub">I put a language model inside a production maintenance pipeline. The model proposes, deterministic code verifies, a human approves. Tripling the model did nothing. Narrowing what it sees doubled precision.</p>
+  <div class="byline"><span class="avatar">I</span> Ierofantis &middot; 9 min read &middot; from my essay on dev.to</div>
+
+  <div class="artcover cv-build">🔧</div>
+
+  <div class="prose">
+    <p>Four hundred thousand extraction failures landed in one run. A hundred and thirty-seven pieces of evidence reached the model. That ratio, roughly one in three thousand, is the whole design. Everything else in this post is an explanation of why the model should see so little, and why the parts of the system that never call a model are the parts that determine whether it works.</p>
+    <p>The problem shape is common. You maintain a large set of small rules, in my case around 1,400 selectors and patterns that locate a price or a title inside pages from as many external sites, covering about 1.6 million monitored items. The sites change without telling you. A rule silently returns the wrong value, or nothing. Any engineer can fix one in minutes once the evidence is in front of them. The cost is volume and triage, not difficulty.</p>
+    <p>That looks like a job for an LLM, and it is, with one catch that shapes everything: <strong>a wrong repair is silent</strong>. A wrong function throws. A wrong rule returns a value, the pipeline stays green, and the data quietly rots. So the naive design, collect failures, show them to the model, apply the answers, is not merely risky. It is a machine for producing plausible garbage with no alarm attached.</p>
+
+    <h2>The generator has one job and no authority</h2>
+    <p>The vocabulary I settled on is deliberately blunt. The <strong>generator</strong> is the model: evidence in, candidate rule out. The <strong>oracle</strong> is deterministic code that decides whether a candidate is acceptable. A <strong>gate</strong> is an oracle check that can only demote a verdict, never promote one. The <strong>adjudicator</strong> is a human, and the only writer to production. The <strong>harness</strong> is everything except the generator.</p>
+    <p>Say that list out loud and the asymmetry is obvious. Everything that decides anything is either deterministic code or a person. The model is a suggestion box.</p>
+
+    <div class="callout"><b>The central claim, measured in production:</b> the quality of a repair pipeline is governed by the oracle and by the evidence handed to the generator, not by the generator. A model three times larger produced no usable gain. Constraining the prompt and narrowing the evidence roughly doubled precision.</div>
+
+    <h2>Stage one: refuse most of the work</h2>
+    <p>The highest-value stage costs nothing and is the one teams skip. Before decoding a single page, partition failures by <em>who can fix them</em>, using metadata alone. Access denied belongs to the anti-abuse team. Entity deleted at the source belongs to nobody, it is gone. Gateway unreachable belongs to infrastructure. None of those are rule problems, and a model handed them will confidently propose repairs for failures no repair can touch.</p>
+    <p>In my estate, 78% of failures attributed to something other than the rule. In one run, 29,852 failures traced to a single dead gateway, a five-minute config fix. Two rules for building this stage: buckets must be mutually exclusive and exhaustive, computed by a single first-match-wins chain and asserted to sum to the total; and each bucket names a team, not a symptom. When I replaced four independent conditions with one exclusive chain, 4,307 failures that had matched nothing for months appeared in the catch-all.</p>
+
+    <h2>Stage two: one representative per mode, plus a sibling</h2>
+    <p>N failing instances collapse into K distinct failure modes, where K is the number of genuinely different repairs required. Group by <em>structure</em>, the vocabulary of identifiers and the template shape, never by content. Hard-split on cheap categorical facts first, cluster softly only within each partition.</p>
+    <p>Then take one representative per mode and carry a <strong>sibling</strong>: a second instance of the same mode that the generator never sees. A candidate validated on exactly one example is indistinguishable from a candidate that encodes that example. Requiring it to hold on the sibling is the cheapest generality test you will ever run.</p>
+    <p>One run compressed 26,481 failures into 114 representatives in 88 seconds. Most sources had one mode; a minority had two or three, and that minority is precisely what "one instance per source" deduplication silently mis-repairs. The same stage also threw out 424 of 561 candidate groups because the evidence was the wrong kind: listing pages instead of product pages, error notices instead of content. My loudest source by raw failure count was one of them. Thousands of failures, zero possible repairs, because 99.9% of its evidence did not contain the value at all.</p>
+
+    <h2>Stage three: show the model less</h2>
+    <p>Do not hand the model the whole page. Anchor on the strongest signal for the value you want, expand to a bounded context, attach only the metadata that could plausibly carry the answer. My focused view is about 5% of the input.</p>
+    <p>This is not a token-cost trick. The excluded 95% is <em>where the wrong answers come from</em>: repeated blocks, adjacent products, alternate renderings of the same value. Cutting it removes a class of error instead of trading one for another. The hazard is real too: when I finally measured instead of assuming, the correct value sat outside the focused window on about one instance in ten for one of my two fields. On those the model mostly declined, which cost recall and protected precision, and it pointed at the single highest-value fix available, widening the anchor for that field. Not touching the model.</p>
+    <p>The prompt is a contract, not a request. It frames the task as <em>repair</em> ("this rule stopped working, here is the evidence, what should it be"), not discovery, so the model stays anchored to the semantic slot instead of any plausible value on the page. It states prohibitions with reasons: no positional indexes, because one candidate that counted siblings returned garbage the moment an optional element appeared; no state-dependent conditions, because one keyed on a "in stock" marker worked perfectly until the state changed and then returned nothing, silently. And it states, explicitly, that <strong>declining is a correct answer</strong>.</p>
+    <p>That last clause carried most of the precision gain. Across every prompt change I made, the count of genuinely good candidates on a fixed set barely moved, eight to eleven, while precision went from 40% to 91%. Nothing I did made the model better at finding answers. Everything I did made it better at not inventing them.</p>
+    <p>Two mechanics matter here. Temperature zero, seed pinned, or you cannot tell a design change from sampling noise; before pinning, two identical runs disagreed on 4 of 46 slots, the same magnitude as the changes I was trying to evaluate. And a critique loop of <em>exactly one</em> round: run the cheap checks, tell the model what its candidate actually matched, allow one revision. Iterating until it passes is overfitting to a single instance with extra steps. In practice the second round mostly produces withdrawal, and withdrawal is a win.</p>
+
+    <h2>Stage four: the oracle runs production code</h2>
+    <p>Verify a candidate by executing the same parser, normalisation and coercion that production will run. Never a reimplementation, never "the model says it matches". A reimplemented oracle drifts, and its drift is indistinguishable from model failure, so you end up tuning the prompt against a bug in your own verifier. I needed a fast in-loop checker anyway, so I measured the two against each other: 3.2% of candidates were decided differently. Tolerable, and large enough that assuming zero would have been a mistake I could never have found later.</p>
+    <p>Checks run cheapest first: syntax, uniqueness (resolves to exactly one element), value (the production consumer accepts it), generality (holds on the sibling), form (no forbidden constructs). Then the two gates everyone forgets.</p>
+    <ul>
+      <li><strong>The regression gate</strong> needs something most pipelines do not keep: evidence of <em>success</em>. Store, per source, the most recent input the rule worked on and the value production derived. Without it, every candidate is judged only where the incumbent fails, the one place it is guaranteed to lose, and you ship repairs that fix the broken minority while breaking the working majority. This store caught thirteen candidates in its first run.</li>
+      <li><strong>The null-hypothesis gate</strong> asks whether the incumbent already works on the failing evidence. If yes, the rule is not the cause, and the candidate gets demoted with a pointer to the real question.</li>
+    </ul>
+    <p>Gates only demote. That asymmetry is what lets you add gates forever without re-validating a single past approval.</p>
+
+    <h2>Stage five: a human, with the right screen</h2>
+    <p>The adjudicator is part of the system and the display is part of the design. Show the incumbent and the candidate side by side with what each yields on the same evidence. Show the counts behind the verdict and the honest impact summed across merged modes. Show the model's self-reported confidence, de-emphasised, because it is the only unverified number on the card. Make the candidate editable before approval: a large share of near-misses need one qualifier, and an edit field turns them from rejections into repairs in seconds.</p>
+    <p>The strongest instrument is the <strong>trial</strong>: run incumbent and candidate over fifty currently-failing and fifty currently-working real instances, report per-instance. Three candidates in one batch carried the same oracle verdict. Under trial, one went from zero of fifty to fifty of fifty, a real repair. One was thirty-three of thirty-three before and after, byte-identical output, pure churn. One had no testable population at all. Same verdict, three correct decisions, three different actions.</p>
+    <p>And approvals must be durable. Before I added rejection memory, the monthly cycle re-proposed the same rejected candidates every month, reviewers noticed within two cycles, and throughput fell. A few lines of persistence recovered more reviewer time than any model change I ever made.</p>
+
+    <h2>When precision plateaus, do not buy a bigger model</h2>
+    <p>Test the instinct, because it is cheap to test. First, bucket a full run's rejections by oracle reason. Of 442 in one run, 31% resolved to nothing at all, 37% resolved to several elements, 13% broke a stated form constraint. That is 68% of failures the model's own in-loop check had already flagged, and it returned them anyway. The ceiling was compliance, not capability. And 3% were mine: a comma-decimal coercion bug that read European prices a hundred times too large. Without the categorisation I would have tuned the prompt against my own bug.</p>
+    <p>Then run the escalation experiment. Send only the rejected slots to a model three times larger, with the full context including exactly what the first candidate matched. On healthy evidence it repaired 22% and damaged 24 slots that had been working. On failing evidence it repaired none. Twelve minutes and two dollars settled an argument the team had been having for weeks. The larger model made the same two mistakes as the smaller one while looking at an explicit list of them, because the disambiguating information sat outside the evidence window. That is a retrieval problem, and you fix it by widening the evidence, not the model.</p>
+    <p>If you do escalate, do it per slot and merge back. Letting the second model rewrite whole instances moved one population from 50% to 46% through collateral damage. Restricting it to the failing slot moved the same population from 75% to 80%. The difference was never the model. It was the scope it was allowed to touch.</p>
+
+    <h2>Report numbers that are allowed to get worse</h2>
+    <p>Keep every run's raw generator output and re-score all of history with today's oracle. A stricter gate will make last month look worse and this month look worse than last month's headline. That is the metric working. Adding the regression gate dropped one precision figure from 51% to 49%; I published the drop with the explanation, because the alternative was reporting a quality gain that consisted entirely of a weaker test.</p>
+    <p>Define precision to exclude declines, and report the decline rate separately; it bounds recall, but it is not an error. And never average populations of different difficulty. My lab figure is 91% on twenty-three hand-picked instances where a repair was known to exist. My field figures are 76% on healthy evidence and 49% on already-failing evidence, where a large share has no valid answer because the product is gone. All three are true. Quoting the lab number as system performance would have been the most misleading thing I could do, and entirely defensible from the raw data.</p>
+
+    <h2>The takeaway</h2>
+    <p>Seven things decide whether a system like this is trustworthy, and none of them is the model: attribution that refuses work no repair can fix; compression to one representative per real mode with a sibling; a small, deliberately chosen evidence window; an oracle on the production code path with gates that only demote; a store of success so regression can be seen; typed verdicts and durable decisions so reviewer effort accumulates; and evaluation that re-scores history and is permitted to get worse. Build those seven and a small general-purpose model is enough. Skip them and no model is.</p>
+
+    <div class="srcbox">
+      <span class="lbl">Read the full method</span>
+      <a class="srclink" href="https://github.com/Ierofantis" target="_blank" rel="noopener">→ Ierofantis on GitHub</a>
+    </div>
+
+    <p class="endnote">Condensed from my longer essay, <i>The Harness Is All You Need</i>, first published on dev.to. Every number here is a measurement from that production deployment, offered as evidence for the design rules, not as a benchmark to reproduce. The scraping side of the same system is in <a href="scrapers-six-surfaces.html">the six surfaces post</a> and <i>The Quiet Fetch</i>.</p>
+
+    <a class="backfeed" href="../index.html#feed">← Back to the feed</a>
+  </div>
+</article>
+
+<footer class="foot"><div class="foot-inner">
+  <a class="logo" href="../index.html" style="font-size:16px"><span class="spark" style="width:24px;height:24px;font-size:13px">🔥</span>Hotpath</a>
+  <div class="foot-spacer"></div><span>Written by Ierofantis</span>
+</div></footer>
+</body></html>

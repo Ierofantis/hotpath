@@ -1,5 +1,21 @@
 [
   {
+    "slug": "harness-is-all-you-need",
+    "cover": "cv-build", "emoji": "🔧", "cat": "AI",
+    "title": "The harness is all you need: an LLM that repairs 1,400 rules and decides nothing",
+    "excerpt": "I put a language model inside a production maintenance pipeline. The model proposes, deterministic code verifies, a human approves. Tripling the model did nothing; narrowing what it sees doubled precision.",
+    "tags": [{"label": "AI Systems", "cls": "t-purple"}, {"label": "LLMs"}, {"label": "Verification"}],
+    "read": "9 min read", "note": "From my essay on dev.to"
+  },
+  {
+    "slug": "shooting-range-flash-to-canvas",
+    "cover": "cv-fire", "emoji": "🎯", "cat": "Game Dev",
+    "title": "Shooting Range: resurrecting a 2016 Flash game with zero assets",
+    "excerpt": "My first game was a .swf nothing can open anymore. I rebuilt it as one canvas and one script: every sprite drawn, every gunshot synthesized with Web Audio, and a five-line Render blueprint with no build step.",
+    "tags": [{"label": "Game Dev", "cls": "t-orange"}, {"label": "Canvas"}, {"label": "Web Audio"}],
+    "read": "6 min read", "note": "Side project"
+  },
+  {
     "slug": "postgres-as-your-queue",
     "cover": "cv-build", "emoji": "🐘", "cat": "Backend",
     "title": "You probably don't need Redis: Postgres as your job queue",

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shooting Range: resurrecting a 2016 Flash game with zero assets — Hotpath</title>
+<meta name="description" content="My first game was an ActionScript 3 shooting range. Flash died and the .swf became a fossil. I rebuilt it as one canvas and one script, every sound and sprite generated at runtime, deployed with no build step.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
+<link rel="stylesheet" href="../assets/style.css"></head><body>
+<header class="nav"><div class="nav-inner">
+  <a class="logo" href="../index.html"><span class="spark">🔥</span>Hot<span class="path">path</span></a>
+  <div class="nav-spacer"></div>
+  <a class="nav-link" href="../index.html#feed">Latest</a>
+  <a class="nav-link" href="https://github.com/Ierofantis" target="_blank" rel="noopener">GitHub</a>
+  <a class="nav-cta" href="../index.html#feed">Read the feed</a>
+</div></header>
+
+<article class="article">
+  <div class="crumbs"><a href="../index.html">Hotpath</a> / Game Dev</div>
+  <h1>Shooting Range: resurrecting a 2016 Flash game with zero assets</h1>
+  <p class="sub">The first game I ever shipped was a .swf. Nothing can open it anymore. So I rebuilt it as one canvas and one script, where every sound and every sprite is generated at runtime, and the whole thing deploys with no build step.</p>
+  <div class="byline"><span class="avatar">I</span> Ierofantis &middot; 6 min read &middot; side project</div>
+
+  <div class="artcover cv-fire">🎯</div>
+
+  <div class="prose">
+    <p>There is a file in one of my oldest repos called <code>shooting.swf</code>. In February 2016 it was a game: two targets jumping around a stage, a pistol cursor, a 60-second timer, a gunshot sample. Today it is a fossil. No browser will run it, and the ActionScript 3 source next to it is a hundred lines that reference symbols living inside a binary <code>.fla</code> I cannot even open. If you started in the Flash era, you have a folder like this too.</p>
+    <p>I did not want to emulate it. I wanted to <strong>reissue</strong> it: same idea, same 60 seconds, built so it cannot rot again.</p>
+
+    <h2>What the original actually was</h2>
+    <p>Reading the AS3 was humbling. A <code>Timer</code> fires every 500 ms, decrements the clock, and teleports two <code>MovieClip</code> targets to random spots inside a 200 by 200 rectangle. Click the good one, your score goes up. Click the bad one, the CPU scores instead. That is the whole game. Everything that made it <em>feel</em> like a game, the gun sprite, the target art, the shot sound, lived in the <code>.fla</code> library as embedded assets.</p>
+    <p>That is exactly why it died. The logic was trivial and portable; the assets were locked in a proprietary container behind a runtime nobody ships. The lesson is not "Flash bad". It is that the code was never the fragile part.</p>
+
+    <div class="callout"><b>The rule I built the remake around:</b> a game that depends on nothing cannot be killed by anything. No sprites, no samples, no bundler, no framework. If the browser can draw a circle and make a tone, that is the whole dependency list.</div>
+
+    <h2>One canvas, one script</h2>
+    <p>The remake is <code>index.html</code> and <code>game.js</code>, and that is the entire deploy. The HTML is a 960 by 540 canvas with <code>cursor: none</code> so the crosshair can be drawn in-game. The script is a single IIFE with a fixed-step loop: update targets, resolve input, draw. No dependencies, no build.</p>
+    <p>Targets are concentric circles drawn each frame. The pistol is a few rotated rectangles that kick back on fire. Muzzle flash is a bright polygon that lives for two frames. Screen shake is a random offset applied to the whole context before drawing, decaying every tick. None of it is art in the asset sense; all of it is a handful of numbers.</p>
+
+    <h2>Sound with no sound files</h2>
+    <p>The original shipped a gunshot sample. The remake ships none. Every sound is synthesized on the fly with the Web Audio API:</p>
+    <ul>
+      <li>A <strong>gunshot</strong> is a short burst of white noise through a fast-decaying gain, plus a low triangle oscillator that ramps from a thump frequency down to 40 Hz. Change two numbers and the pistol becomes a shotgun.</li>
+      <li>A <strong>hit</strong> is a small chord of sine tones whose pitch rises with your combo multiplier, so a streak literally sounds higher.</li>
+      <li>A <strong>decoy hit</strong> is a rude 110 Hz square wave. You will not need the red flash to know you messed up.</li>
+    </ul>
+    <p>Each weapon carries its own <code>sound: { freq, dur, thump }</code> block next to its fire rate and magazine size. The audio is data on the weapon, not a file on disk, so adding a fifth gun is one object literal.</p>
+
+    <h2>Three target colours, one design idea</h2>
+    <p>The 2016 game had a good target and a bad target. The remake keeps that and sharpens it. <strong>Red</strong> targets score by ring: bullseye 100, inner 50, outer 25. <strong>Black</strong> decoys cost 100 and reset your combo. <strong>Gold</strong> targets are smaller and die faster, but pay 150 and add two seconds to the clock.</p>
+    <p>That last one is the mechanic I care about. In a 60-second game the only currency that matters is time, and gold is the only way to buy it. So the fast player does not chase the biggest red; the fast player chases gold, and the decoys are there to punish exactly that greed. Combos step the multiplier up to 5x, one step every five hits, and a single miss or decoy drops you to 1x. Same cruelty as my other games: the punishment changes the run, not just the score.</p>
+
+    <h2>Four weapons from one table</h2>
+    <p>Weapons are rows in an array. Pistol is the baseline. Shotgun fires seven pellets in a spread and is the only sane way to clear a cluster. SMG is full auto with a wobble. Sniper is slow and doubles points, and it <strong>pierces</strong>: the hit test walks every target under the cursor instead of breaking after the first, so stacked targets fall together. That whole difference is one <code>if (!w.pierce) break;</code> inside the loop. The rest of the feel, kick, shake, barrel length, is numbers on the row.</p>
+
+    <h2>Deploying a game that has no build</h2>
+    <p>The repo still holds the <code>.fla</code> and <code>.swf</code> as history, and I did not want three megabytes of dead Flash served next to the live game. So the playable files sit in <code>public/</code>, and a five-line Render blueprint points at that folder:</p>
+<pre><code>services:
+  - type: web
+    name: shooting-range
+    runtime: static
+    buildCommand: echo "static site, nothing to build"
+    staticPublishPath: ./public</code></pre>
+    <p>Push to master, Render serves the folder. No Node, no bundler, no container. It is the same pattern this blog runs on, and for a 22 KB game it is the right amount of infrastructure, which is almost none.</p>
+
+    <h2>The takeaway</h2>
+    <p>When you look at an old project and decide whether to save it, do not ask whether the code still runs. Ask what it <em>depends on</em>, and whether each of those things will still exist in ten years. The original had four dependencies: a runtime, an authoring tool, a container format, and a sound file. The remake has one, the browser. That is the difference between a game and a fossil.</p>
+
+    <div class="srcbox">
+      <span class="lbl">Play / read the code</span>
+      <a class="srclink" href="https://shooting-range.onrender.com/" target="_blank" rel="noopener">→ Play Shooting Range live</a>
+      <a class="srclink" href="https://github.com/Ierofantis/Shooting-Game" target="_blank" rel="noopener">→ Ierofantis/Shooting-Game on GitHub</a>
+    </div>
+
+    <p class="endnote">Built solo, first in ActionScript 3 in 2016, then remade in plain JavaScript. If you clone it, read the <code>WEAPONS</code> table at the top of <code>public/game.js</code> first: the whole feel of the game is in those numbers.</p>
+
+    <a class="backfeed" href="../index.html#feed">← Back to the feed</a>
+  </div>
+</article>
+
+<footer class="foot"><div class="foot-inner">
+  <a class="logo" href="../index.html" style="font-size:16px"><span class="spark" style="width:24px;height:24px;font-size:13px">🔥</span>Hotpath</a>
+  <div class="foot-spacer"></div><span>Written by Ierofantis</span>
+</div></footer>
+</body></html>
