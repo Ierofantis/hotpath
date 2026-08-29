@@ -4,8 +4,8 @@
     "cover": "cv-build",
     "emoji": "📓",
     "cat": "Notebook",
-    "title": "Notebook, August: 23 mechanisms from 223 commits",
-    "excerpt": "A month of git history reduced to its technical content: policy routing inside containers, idempotent namespace mutations, hysteresis and single-flight, closed-interval scans, a generative slot between deterministic gates with its evaluation framework, sticky-session identity. Symptom, mechanism, fix, verification, generalisation. Nothing about what the systems are for.",
+    "title": "Notebook, August: 23 rules, each with its mechanism",
+    "excerpt": "Twenty-three engineering rules distilled from a month of commits, written for whoever meets the same situation next: when you see this, do this, because of this, check it this way, and here is where it stops applying. Container networking, control loops, storage, generative loops behind deterministic gates, sticky sessions, geometry.",
     "tags": [
       {
         "label": "Notebook",
@@ -21,7 +21,7 @@
         "label": "Kubernetes"
       }
     ],
-    "read": "26 min read",
+    "read": "24 min read",
     "note": "Monthly notebook &middot; from git history"
   },
   {
