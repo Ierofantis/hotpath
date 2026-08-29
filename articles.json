@@ -4,8 +4,8 @@
     "cover": "cv-build",
     "emoji": "📓",
     "cat": "Notebook",
-    "title": "Notebook, August: 16 mechanisms from 223 commits",
-    "excerpt": "A month of git history reduced to its technical content: policy routing inside containers, idempotent namespace mutations, hysteresis and single-flight, closed-interval scans, positive-labelled validation sets, session identity binding. Symptom, mechanism, fix, verification, generalisation.",
+    "title": "Notebook, August: 23 mechanisms from 223 commits",
+    "excerpt": "A month of git history reduced to its technical content: policy routing inside containers, idempotent namespace mutations, hysteresis and single-flight, closed-interval scans, a generative slot between deterministic gates with its evaluation framework, session identity binding. Symptom, mechanism, fix, verification, generalisation.",
     "tags": [
       {
         "label": "Notebook",
@@ -15,13 +15,13 @@
         "label": "Mechanisms"
       },
       {
-        "label": "Kubernetes"
+        "label": "LLM loops"
       },
       {
-        "label": "Data"
+        "label": "Kubernetes"
       }
     ],
-    "read": "18 min read",
+    "read": "26 min read",
     "note": "Monthly notebook &middot; from git history"
   },
   {
