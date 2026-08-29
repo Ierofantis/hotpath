@@ -5,7 +5,7 @@
     "emoji": "📓",
     "cat": "Notebook",
     "title": "Notebook, August: 23 mechanisms from 223 commits",
-    "excerpt": "A month of git history reduced to its technical content: policy routing inside containers, idempotent namespace mutations, hysteresis and single-flight, closed-interval scans, a generative slot between deterministic gates with its evaluation framework, session identity binding. Symptom, mechanism, fix, verification, generalisation.",
+    "excerpt": "A month of git history reduced to its technical content: policy routing inside containers, idempotent namespace mutations, hysteresis and single-flight, closed-interval scans, a generative slot between deterministic gates with its evaluation framework, sticky-session identity. Symptom, mechanism, fix, verification, generalisation. Nothing about what the systems are for.",
     "tags": [
       {
         "label": "Notebook",
