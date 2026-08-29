@@ -4,8 +4,8 @@
     "cover": "cv-build",
     "emoji": "📓",
     "cat": "Notebook",
-    "title": "Notebook, August: 23 rules, each with its mechanism",
-    "excerpt": "Twenty-three engineering rules distilled from a month of commits, written for whoever meets the same situation next: when you see this, do this, because of this, check it this way, and here is where it stops applying. Container networking, control loops, storage, generative loops behind deterministic gates, sticky sessions, geometry.",
+    "title": "Notebook, August: 23 techniques",
+    "excerpt": "Twenty-three engineering techniques, each as goal, method, rationale, how to verify, and limits: routing and DNS inside containers, probes and breakers, incremental scans, blob storage, generative loops behind deterministic gates, sessions through a gateway, skeletal retargeting.",
     "tags": [
       {
         "label": "Notebook",
@@ -21,8 +21,8 @@
         "label": "Kubernetes"
       }
     ],
-    "read": "24 min read",
-    "note": "Monthly notebook &middot; from git history"
+    "read": "22 min read",
+    "note": "Monthly notebook"
   },
   {
     "slug": "grapple-dojo-dots-to-skeleton",
