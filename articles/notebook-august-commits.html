@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Notebook, August: what 223 commits taught me — Hotpath</title>
-<meta name="description" content="A month of git history across a crawler platform, an egress fleet and four small games, mined for the lessons hiding in reverts and second fixes. Business details scrubbed, techniques kept.">
+<title>Notebook, August: 16 mechanisms from 223 commits — Hotpath</title>
+<meta name="description" content="A month of git history reduced to its technical lessons: policy routing inside containers, idempotent namespace mutations, hysteresis and single-flight, closed-interval scans, positive-labelled validation sets, session identity binding. Symptom, mechanism, fix, verification, generalisation.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
 <link rel="stylesheet" href="../assets/style.css"></head><body>
 <header class="nav"><div class="nav-inner">
@@ -14,53 +14,202 @@
 </div></header>
 <article class="article">
   <div class="crumbs"><a href="../index.html">Hotpath</a> / Notebook</div>
-  <h1>Notebook, August: what 223 commits taught me</h1>
-  <p class="sub">I pointed a script at a month of git history across ten repos, kept only my own commits, flagged every revert and second fix, and wrote down what those commits knew that the ones before them did not. Names of shops, vendors and colleagues are scrubbed; the techniques are the point.</p>
-  <div class="byline"><span class="avatar">I</span> Ierofantis &middot; 9 min read &middot; monthly notebook, from git history</div>
+  <h1>Notebook, August: 16 mechanisms from 223 commits</h1>
+  <p class="sub">A month of git history reduced to its technical content. Each entry states the symptom, the mechanism at the kernel, protocol, query or code level, the exact fix, what verified it, and the generalisation with its limits. No systems are described; only what broke and why.</p>
+  <div class="byline"><span class="avatar">I</span> Ierofantis &middot; 18 min read &middot; monthly notebook, from git history</div>
   <div class="artcover cv-build">📓</div>
   <div class="prose">
-    <p>A changelog tells you what shipped. A notebook tells you what you would do differently, and that lives in a different set of commits: the revert, the fix that follows a fix, the config flipped on Tuesday and flipped back on Thursday. So the script that produced this post does one thing a <code>git log</code> does not: it flags any commit whose message smells like a lesson (fix, revert, instead, was blocking, back to) and hands me those first. August had 223 commits of mine across eight active repos, most of them in a crawler platform I work on, the rest in an egress fleet, a blog and four small games. Below are the seven lessons the flagged commits agreed on.</p>
+    <p><b>Method.</b> Window: the 31 days ending 2026-08-29. Sources: ten repositories, eight with activity, 223 commits authored by me, plus a small number of teammates' commits in one repository where I reviewed the change and reproduced the mechanism. Selection: a script flags commits whose message contains a lesson marker (fix, revert, instead, was blocking, back to, root cause) and prints their changed lines; the entries below are the mechanisms those diffs contain, grouped by technical domain rather than by repository. Redaction: retailers, vendors, hosts, identifiers and colleagues are replaced before the diffs reach the draft; numbers are kept only where they are the mechanism (thresholds, sizes, units) and dropped where they describe scale.</p>
 
-    <p>One rule before the list. The work repos serve real clients against real retail sites, so every retailer is "Shop A" or "a price-comparison site", every network vendor is "Provider B", teammates are "a teammate", and there are no volumes, replica counts or market names. The redaction runs in the script, before the commit messages ever reach a draft, which is the only place it can be trusted to run.</p>
+    <h2>A. Networking inside containers</h2>
 
-    <h2>1. When the gateway is unreachable, suspect the routing before the fail-closed rule</h2>
-    <p>The egress fleet runs tunnel clients in pods behind a gateway. A new upstream vendor joined this month and its pods came up green while the gateway could not reach them. The first theory, everyone's first theory, was the client's fail-closed rule dropping traffic. Three fixes later the commit message that stuck read "asymmetric routing, not the fail-closed DROP": replies were leaving through the tunnel while requests had arrived on the pod network, so the gateway saw a black hole that looked exactly like a firewall.</p>
-    <p>The same week produced the rest of the checklist for wrapping any tunnel client in a container: point the local proxy daemon's DNS at the tunnel's own resolver instead of the cluster's; disable the client's fail-closed mode before the first connect; verify that "enable in background" and "connect" actually succeeded rather than trusting their exit codes; and, the one that bit twice this month across two vendors, iptables rules accumulate when a pod restarts in place, so a script that adds rules must also delete them. A restart in place is not a fresh pod. Assume the previous life left furniture behind.</p>
+    <h3>1. A lower-priority <code>ip rule</code> makes a later exception dead code</h3>
+    <p><b>Symptom.</b> Tunnel pods report Connected, but a gateway in the same cluster cannot open a TCP connection to them. Health checks on the proxied ports time out; traffic originating inside the pod works.</p>
+    <p><b>Mechanism.</b> The tunnel client installs fwmark policy routing: an <code>ip rule</code> at priority 9 of the form <code>not from all fwmark 0xca6c lookup 51820</code>, i.e. everything without the mark goes through the tunnel's table. The base image's exception for the cluster CIDR sits at priority 10 and is therefore never consulted. A SYN arrives on <code>eth0</code> from a cluster address; the SYN-ACK is routed by the priority-9 rule into the tunnel interface and never returns to the requester. From the gateway's side this is indistinguishable from a firewall DROP, which is where the first three hypotheses went.</p>
+    <p><b>Fix.</b> Source-based policy routing for the pod's own address into a dedicated table, capturing the original gateway <em>before</em> the tunnel rewrites the default route:</p>
+<pre><code>ETH0_IP=$(ip -4 addr show eth0 | awk '/inet /{sub("/.*","",$2); print $2}')
+ETH0_GW=$(ip route | awk '/default via/{print $3; exit}')
+# ... connect the tunnel ...
+while ip rule del from "$ETH0_IP" table 100 2&gt;/dev/null; do :; done
+ip rule add from "$ETH0_IP" table 100
+ip route replace default via "$ETH0_GW" dev eth0 table 100</code></pre>
+    <p>The address extraction uses <code>awk</code>: the image is busybox-based and <code>grep -P</code> exits non-zero there, which would have left the variable empty and the rule matching nothing.</p>
+    <p><b>Verification.</b> Applied alone, without touching iptables, in the live pod; all gateway replicas reached the pod on the next probe. The same fix, independently, on a second client that used a plain default-route takeover rather than fwmark rules.</p>
+    <p><b>Generalisation.</b> Whenever a process takes over the default route, replies to connections that arrived on another interface need a source-based rule into a table whose default is that interface's original gateway. Does not apply if the tunnel client itself exempts the interface's subnet at a higher priority than its own catch-all.</p>
 
-    <h2>2. A self-healing selector has to prove itself where things still work</h2>
-    <p>The crawler has a healer: when a site changes its markup and a CSS selector stops extracting a field, the healer proposes a replacement mined from the pages that failed. In July the healer validated proposals against the failed pages only. Obvious, and wrong. A selector that matches the new layout can still break the old one, and most of the fleet was still on the old one.</p>
-    <p>Four commits in one week turned that around: validate every proposal against a sample of working pages as well as the failed set, at publish time and again inside the healing loop; demote a proposal when the field it "fixes" already extracts fine on those pages; remember rejections so a proposal a human turned down is never silently re-filed; and route the genuinely unfixable ones into a single policy card instead of an eternal, silent retry. The rule generalises to any automated repair: the test set must include the cases that currently pass, or the repair will optimise for the failure and quietly burn the rest.</p>
+    <h3>2. A container restart is not a fresh network namespace</h3>
+    <p><b>Symptom.</b> A pod with several hundred container restarts fails gateway health checks while its tunnel is healthy. Latency to the proxied port grows with restart count.</p>
+    <p><b>Mechanism.</b> With <code>restartPolicy: Always</code>, a container restart reuses the pod sandbox and therefore its network namespace. The start script ran <code>iptables -I INPUT -p tcp --dport 8118 -j ACCEPT</code> and <code>ip rule add from $IP table 100 || true</code> unconditionally. Neither command has a uniqueness constraint: the pod carried over 1200 duplicate INPUT rules and around a hundred duplicate <code>ip rule</code> entries (each add is assigned a fresh priority). xtables evaluates a chain linearly per packet, so every packet paid for the whole pile, enough to exceed the probe timeout.</p>
+    <p><b>Fix.</b> Delete-until-absent before every insert; <code>-D</code> removes one matching rule per call and fails when none remain:</p>
+<pre><code>while iptables -D INPUT -p tcp --dport 8118 -j ACCEPT 2&gt;/dev/null; do :; done
+iptables -I INPUT -p tcp --dport 8118 -j ACCEPT
+while ip rule del from "$ETH0_IP" table 100 2&gt;/dev/null; do :; done
+ip rule add from "$ETH0_IP" table 100</code></pre>
+    <p><b>Verification.</b> Rule count read on the live pod before and after; in an unprivileged test namespace, five repeated runs produced five duplicates under the old script and exactly one under the new.</p>
+    <p><b>Generalisation.</b> Every mutation of shared namespace state at container start (iptables, ip rule, routes, resolv.conf) must be idempotent, because the namespace, the emptyDir volumes and the sandbox's <code>/etc/resolv.conf</code> all outlive the container. Startup scripts written as if they run once are wrong by construction under Kubernetes.</p>
 
-    <h2>3. Keep the revert in place</h2>
-    <p>Queue topology was the month's flip-flop. One shop was split into lanes, one country per lane, then given more lanes, then put back on one queue, then split again with a different worker count, all within two days as the site's behaviour changed under us. Two habits made the flip-flopping cheap instead of chaotic. The first: when a feature is disabled, leave its configuration commented in place rather than deleted, so the next enable is an uncomment and a diff, not an archaeology dig. The second, straight from a commit subject: "document the revert in place", meaning the reason it was turned off lives next to the switch.</p>
-    <p>The largest commit of the month was also a revert, of a whole pull request, hundreds of files. It was the right call. Partially reverting a big change leaves you with a state nobody has ever tested. Revert the unit that was reviewed, then re-land the parts that were fine.</p>
+    <h3>3. An application that resolves its own DNS bypasses the allow-list you tested</h3>
+    <p><b>Symptom.</b> <code>curl</code> inside the pod resolves and fetches fine; the same URL through the pod's local proxy daemon returns 502 "Host Not Found".</p>
+    <p><b>Mechanism.</b> Two separate resolver paths. The daemon's config hardcoded <code>nserver 1.1.1.1</code>, so it sent UDP 53 to a public resolver directly. The tunnel client's firewall rules REJECT outbound port 53 except to loopback, and keep doing so even with its fail-closed mode switched off. libc's <code>getaddrinfo</code> read <code>/etc/resolv.conf</code>, which the client had pointed at its own resolver on loopback, an allowed path. Same host, two resolvers, one blocked.</p>
+    <p><b>Fix.</b> Rewrite the daemon's resolver at runtime from whatever the client wrote into resolv.conf, which changes per connection:</p>
+<pre><code>VPN_DNS="$(awk '/^nameserver/{print $2; exit}' /etc/resolv.conf)"
+sed -i "s/^nserver .*/nserver ${VPN_DNS}/" /etc/proxy/proxy.cfg</code></pre>
+    <p>A related failure in another client: <code>wg-quick</code> runs <code>resolvconf -d wg0</code> on shutdown, emptying <code>/etc/resolv.conf</code>; kubelet writes that file only at sandbox creation, so the restarted container has no nameserver at all. The pre-up hook then injected the cluster DNS ClusterIP, unreachable by design under <code>dnsPolicy: None</code> plus a NetworkPolicy denying in-cluster DNS egress, and the pod crash-looped on token fetch. The fallback now writes the pod's own <code>dnsConfig</code> resolvers instead.</p>
+    <p><b>Verification.</b> Full reproduction in local Docker outside the cluster; then the sidecar's <code>/health</code> and <code>/ip</code> endpoints passing by hostname through the proxy. For the resolv.conf case, writing the resolvers into the crash-looping pod brought it up on the next restart.</p>
+    <p><b>Generalisation.</b> Testing name resolution with the system resolver proves nothing about a daemon with its own <code>nserver</code> setting. Enumerate every resolver path a pod contains before trusting a DNS allow-list.</p>
 
-    <div class="callout"><b>The month's reframe:</b> every revert was a lesson the forward commit did not have yet. Reading the flagged commits in pairs, the change and its undo, teaches more than reading either alone, because the pair contains the theory that turned out to be wrong.</div>
+    <h3>4. A CLI exit code means "accepted", never "reached"</h3>
+    <p><b>Symptom.</b> Every test pod permanently Disconnected although each start-up command returned 0.</p>
+    <p><b>Mechanism.</b> The client's <code>connect</code> is a documented no-op unless background mode is enabled. <code>background enable</code> raced the daemon right after login and failed once, non-fatally; every subsequent <code>connect</code> exited 0 while status stayed Disconnected. A second client's fail-closed toggle behaved the same way: <code>set</code> returned success, but toggling it after connecting forced a reconfigure that never recovered.</p>
+    <p><b>Fix.</b> Retry the enable up to 5 times with a 2 s sleep and fail hard if it never succeeds; follow every <code>connect</code> with a 15 &times; 1 s poll of <code>status | grep -q Connected</code>, ignoring the exit code; change daemon settings only in the Disconnected state and confirm with the matching <code>get</code>, not the <code>set</code>'s return value.</p>
+    <p><b>Verification.</b> Live pods on the day; the follow-up rollout commits enabled replicas that had been parked at zero after the failed test.</p>
+    <p><b>Generalisation.</b> Poll the observable state you actually need; treat command exit codes as acknowledgement of the request. Especially true for daemons controlled through a CLI that talks to them asynchronously.</p>
 
-    <h2>4. splitlines() is not split("\n")</h2>
-    <p>A diagnosis tool uploaded JSONL from a reused pod and some records arrived corrupted. The culprit was Python's <code>str.splitlines()</code>, which splits on every Unicode line boundary, including characters like U+2028 that had been sitting harmlessly inside JSON string values. One record became two half-records. <code>split("\n")</code> is the correct tool for a line-delimited format, precisely because it is dumber. The same repo taught two neighbours of this lesson: store failed page bodies in their own collection rather than in the state document that everything else reads, and when a cache is rebuilt from scratch, write it with <code>$out</code> (replace) instead of <code>$merge</code>, so a full rebuild cannot inherit stale rows from the previous build. Hot state small, blobs elsewhere, rebuilds that replace.</p>
+    <h2>B. Control loops and orchestration</h2>
 
-    <h2>5. Rotation policy belongs to the target, not the platform</h2>
-    <p>An <a href="personas-coherent-identity.html">earlier post</a> argued that a scraper's exit address is part of its identity. This month tested how far that goes. For one site, a pinned pool of exit addresses per session worked; for another, the same pool got the whole pool burned faster, and the config went back to plain rotation within the day. Then a middle mode appeared: <em>reassign</em>, where a session that gets flagged is moved to a new exit and stays there, as opposed to rotating on every request. Selectors that need a clearance cookie re-warmed were flipped to reassign, then some were flipped back.</p>
-    <p>The lesson has nothing to do with which mode is right. There is no platform-wide answer, so the mode has to be a per-target setting with a cheap switch, and the anti-scan state that goes with it (clearance cookies bound to an address and a user agent) has to be isolated per lane or a change on one target poisons another. One fix this month was exactly that: a clearance cookie's binding to IP and UA had drifted, and the tokens used to pin a session to an exit were not URL-safe, so pinning silently failed on some paths. Identity has to be coherent end to end, or it is theatre.</p>
+    <h3>5. A single-shot probe cannot tell a slow scheduler from a dead target</h3>
+    <p><b>Symptom.</b> Pods with live connections flip HEALTHY/UNHEALTHY within one 30 s cycle; gateways OOM-restart while a client-triggered rotation of a dead pod takes ~500 s and each new request triggers another.</p>
+    <p><b>Mechanism.</b> The health checker, the proxy server and the control API share one asyncio loop. Under load, scheduling jitter delays a check coroutine past its timeout for a perfectly healthy pod; a single failure flipped state. Kubernetes probes had no <code>timeoutSeconds</code> (default 1 s) and failed for the same reason. The rotation endpoint was expensive, awaited a tunnel reconnect, and was callable concurrently: a dozen callers in one second starved the loop.</p>
+    <p><b>Fix.</b> Three independent mechanisms. Hysteresis: <code>health_check_failure_threshold = 2</code> consecutive failures to flip, any success resets, transitions logged rather than samples, UNKNOWN stays UNKNOWN on one failure. Probe budget: <code>timeoutSeconds: 5</code>. Breaker plus single-flight on rotation:</p>
+<pre><code>cooldown = min(base * 2 ** (failures - 1), cap)      # 5 s -&gt; 300 s
+if pod in in_flight or now &lt; cooldown_until[pod]:
+    return None                                        # refuse; no await between check and add
+in_flight.add(pod)
+# on failure: drop the session and re-pick with exclude={pod}; serve the failed pod
+# rather than returning 503; at most one rotation attempt per request</code></pre>
+    <p><b>Verification.</b> Unit tests: one failure does not flip a healthy pod, success resets the counter, cooldown opens and backs off exponentially, single-flight refuses a concurrent caller, re-pick excludes the failed pod. Gauges for pod health, consecutive failures and a transitions counter exported to Prometheus, with stale series removed on pod disappearance (gauges do not expire on their own).</p>
+    <p><b>Generalisation.</b> Anything expensive and client-triggerable needs a breaker and single-flight or it becomes a self-inflicted denial of service; any probe sharing an event loop with real work needs hysteresis. Neither replaces fixing the loop's contention; both keep it from cascading.</p>
 
-    <h2>6. Deployment config is code, and it has bugs</h2>
-    <p>The dumbest failures of the month were all in files nobody unit-tests. A game's Render build failed because <code>NODE_ENV=production</code> makes <code>npm install</code> skip dev dependencies, and the bundler was one; the fix is <code>npm install --include=dev</code> in the build command. A hosted service kept flipping back to the sleeping free tier every time the blueprint synced, until the plan was pinned in the blueprint itself. A Helm upgrade hung on a new major version's watcher, fixed with <code>--wait=legacy</code>. A CI server's concurrency control turned out to be broken, and a teammate replaced it with a self-implemented deploy lock. The gateway's health checks were flapping until they got hysteresis, and rotations got a circuit breaker so a failing pod could not be rotated into forever.</p>
-    <p>None of these is a systems insight. All of them cost hours. The habit I am taking into September: every deploy-side fix gets a one-line comment at the place it lives saying which failure it prevents, because the next person to "clean up" that flag will be me.</p>
+    <h3>6. External and internal recovery on the same cadence race each other</h3>
+    <p><b>Symptom.</b> A container is killed by the liveness probe at the exact moment its own reconnect loop starts, repeatedly. Separately, every restart re-authenticates against an external API, and a cleanup hook logs out on kills that were never real terminations.</p>
+    <p><b>Mechanism.</b> The start script self-heals after 3 failed checks at a 30 s period (90 s). The livenessProbe was configured with the identical <code>periodSeconds: 30, failureThreshold: 3</code>, so kubelet and the script reached their thresholds simultaneously; kubelet won. For the auth churn: a <code>preStop</code> hook fires on a liveness-triggered container kill inside a still-alive pod, so "log out on exit" ran on every restart and turned restart storms into auth storms against a rate-limited endpoint. A first version of that logout, installed with <code>trap cleanup EXIT</code> and <code>trap 'exit 0' TERM</code> (needed because PID 1 gets no default signal actions), was reverted for exactly this reason.</p>
+    <p><b>Fix.</b> <code>failureThreshold: 8</code> (240 s) on the client that has an internal loop, unchanged on the one that does not. Login state kept in a pod-scoped <code>emptyDir</code> mounted at the client's state directory, seeded from a <code>.default</code> copy baked into the image when empty (a plain mount would shadow reference data the client needs). Login gated on a local status query. Logout only when the pod is genuinely going away:</p>
+<pre><code>pod_is_being_deleted() {
+  [ -n "$(kubectl get pod "$POD_NAME" -o jsonpath='{.metadata.deletionTimestamp}')" ]
+}</code></pre>
+    <p><b>Verification.</b> <code>deletionTimestamp</code> semantics checked on a throwaway cluster: set on delete, eviction and Recreate rollouts, empty on a liveness kill. Pod events traced for the race.</p>
+    <p><b>Generalisation.</b> Give the cheaper recovery a full cycle before the expensive one may fire. <code>emptyDir</code> is pod-scoped and survives container restarts; <code>deletionTimestamp</code> is the only in-hook signal that distinguishes a restart from a termination.</p>
 
-    <h2>7. Prove the geometry in numbers before you look at it</h2>
-    <p>On the games side the month was <a href="grapple-dojo-dots-to-skeleton.html">retargeting GrappleMap's joint positions onto rigged 3D avatars</a>, and the thing that made it possible was having no browser while writing it. The solver had to pass a headless test over every position in the database before I saw a single frame, and the two real bugs (a stale matrix cache, a model exported facing the wrong way) were caught by the test in one line each. Measurement first, pixels last; the same instinct as lesson 2, from the other side of the screen.</p>
+    <h3>7. Ownership and placement: SSA, spread constraints, a ConfigMap mutex, least-loaded allocation</h3>
+    <p><b>Symptom.</b> Four unrelated deploy failures: <code>helm upgrade</code> refusing with "Apply failed with 1 conflict: conflict with 'kubectl' ... .spec.replicas"; seven new replicas landing on one node and six hanging; two CI runs from one push where the second was cancelled at 0 s instead of queued; and one credential holding nine leases against a cap of eight while another had never been used.</p>
+    <p><b>Mechanism.</b> Helm 4 applies with Server-Side Apply; a manual <code>kubectl scale</code> makes <code>kubectl</code> the field manager of <code>.spec.replicas</code>, and the declarative owner is refused until the field matches again. The default scheduler scores by free resources, so deleting pods on the crowded node frees resources there and puts replacements straight back. The CI server's <code>concurrency: group</code> with <code>cancel-in-progress: false</code> cancels instead of queuing in that version. Leases were acquired first-fit in secret order, so the first key always filled.</p>
+    <p><b>Fix.</b> Never scale by hand under SSA; change values and let CI apply. Pod-count spreading:</p>
+<pre><code>topologySpreadConstraints:
+  - maxSkew: 1
+    topologyKey: kubernetes.io/hostname
+    whenUnsatisfiable: ScheduleAnyway   # soft: a cordoned node never strands pods Pending
+    labelSelector: { matchLabels: { component: tunnel-proxy } }</code></pre>
+    <p>A distributed mutex built on the API server's create-if-absent, scoped to the Helm step only, TTL 1800 s with stale takeover, maximum wait 1500 s (under Helm's 30 min timeout), released in an <code>if: always()</code> step:</p>
+<pre><code>until kubectl create configmap "$LOCK" --from-literal=holder="$RUN" \
+        --from-literal=acquired="$(date -u +%s)"; do
+  AGE=$(( $(date -u +%s) - $(kubectl get cm "$LOCK" -o jsonpath='{.data.acquired}') ))
+  [ "$AGE" -gt "$LOCK_TTL" ] &amp;&amp; kubectl delete configmap "$LOCK"
+  sleep 15
+done</code></pre>
+    <p>Least-loaded lease acquisition: sort keys by current holder count (ghost holders whose pod no longer exists filtered out) and iterate in that order; atomicity stays in the <code>kubectl replace</code> with <code>resourceVersion</code>, the sort is only a preference. Also: Helm 4's bare <code>--wait</code> uses a kstatus watcher with an open bug that can report InProgress indefinitely; <code>--wait=legacy</code> polls directly. Under <code>strategy: Recreate</code>, per-image build triggers so a one-client fix does not restart every pod; unchanged images have their live tag re-supplied via <code>--set</code> because <code>--reuse-values</code> does not back-fill literal tags.</p>
+    <p><b>Verification.</b> The SSA conflict reproduced live and cleared by matching the value; spread constraints patched onto running Deployments before being committed to the chart; the lock tested for atomic acquire, stale detection and release; the sort verified on synthetic registry data including ghost holders.</p>
+    <p><b>Generalisation.</b> Under SSA every manual mutation claims field ownership. Resource scoring is not count spreading. Create-if-absent on the API server is a correct mutex primitive. First-fit allocation concentrates load; put fairness in the ordering and correctness in the compare-and-swap.</p>
 
-    <h2>How the notebook gets made</h2>
-    <p>The script is small: for each repo, <code>git log --numstat</code> since a date, own commits only, grouped by week, with a redaction map applied to subjects, bodies and paths before anything is written, and private repos reduced to top-level directories. It flags lesson-shaped commits and prints them first. Then the writing is manual, on purpose: the script finds where the learning is, it does not know what the learning was. The redaction map is the one file that holds real names, and it never leaves the machine.</p>
+    <h2>C. Data and storage</h2>
 
-    <p>Open question for September: two of the seven lessons are about the boundary between "a fresh start" and "a restart in place", pods and caches both. I suspect there is one principle under them, and I do not have it yet.</p>
+    <h3>8. An incremental scan over a mutable timestamp index never finishes without an upper bound</h3>
+    <p><b>Symptom.</b> A delta aggregation that should take minutes runs for hours, re-processing documents it has already merged.</p>
+    <p><b>Mechanism.</b> Aggregations are not snapshot-isolated. The scan walks the <code>updated_at</code> index from a watermark; concurrent writers bump <code>updated_at</code> on live documents, which moves them ahead of the cursor; the scan meets them again and re-merges. With continuous inflow the scan chases the head of the index instead of reaching an end.</p>
+    <p><b>Fix.</b> Close the interval at the run's start time, and store that same value as the next watermark so anything written during the run belongs to the next delta:</p>
+<pre><code>run_start = now()
+match = {"updated_at": {"$gte": watermark - timedelta(minutes=5), "$lt": run_start}}
+# ... aggregate ...
+save_watermark(run_start)</code></pre>
+    <p>The 5-minute overlap below the watermark covers documents whose <code>updated_at</code> was set slightly before they became visible.</p>
+    <p><b>Verification.</b> Unverified beyond the run completing; no test in the commit.</p>
+    <p><b>Generalisation.</b> Any incremental scan keyed on a field that writers update needs a half-open interval <code>[watermark, run_start)</code>. Not needed when the key is append-only (an insertion id, an immutable created_at).</p>
 
-    <div class="srcbox"><span class="lbl">Related on Hotpath</span>
-      <a class="srclink" href="cookie-handoff-warmup.html">→ The cookie handoff: let a browser solve it, then let curl fly</a>
+    <h3>9. Rebuilds replace, deltas merge; blobs live apart from state; caps are measured in the stored unit</h3>
+    <p><b>Symptom.</b> A full cache rebuild takes hours; every query on a state collection is slow regardless of projection; a page-body store silently drops most pages from some sites.</p>
+    <p><b>Mechanism.</b> <code>$merge</code> upserts one document at a time, an <code>_id</code> lookup plus maintenance of five secondary indexes, millions of times on a rebuild. Failed-page bodies of several hundred KB embedded in state documents raised the mean document size to ~36 KB, and the server fetches whole documents before projecting, so every non-covered query paid for bodies it never returned. A 200 KB cap on <em>raw UTF-8</em> excluded any page in a two-byte-per-character script above ~100k characters, and the skip logged at INFO every hundredth time.</p>
+    <p><b>Fix.</b> Full builds write with <code>$out</code> (atomic collection swap, old one queryable meanwhile, indexes created once afterwards); deltas keep <code>$merge</code>. Bodies move to their own collection keyed by execution id, <code>zlib.compress(raw, 6)</code> as BSON Binary with byte counts, a TTL index on <code>created_at</code> as the retention policy, and a 12 MiB guard under the 16 MB document limit; the state document keeps <code>html_length</code> only; the store runs after the state transition and swallows its own errors so it can never block the pipeline. The cap moves to the compressed size (256 KiB, roughly 1.5 to 2.5 MB raw) with an 8 MB raw guard before compressing; skips log at WARNING every fiftieth with a running skipped/total ratio. A second corpus keyed by <em>entity</em> rather than event, <code>_id = track_id</code>, upserted on success, so its size is bounded by entity count and each document is the latest working page, with a 14-day TTL.</p>
+    <p><b>Verification.</b> Compression round-trip and decoder parity offline; the rest unverified in the commits.</p>
+    <p><b>Generalisation.</b> Bulk rebuilds should produce a fresh collection and index once. Large blobs are a tax on every query of the document that carries them. A size limit must be expressed in the unit that is actually stored, and a skip counter must be loud enough to be noticed in the first hour, not the first week.</p>
+
+    <h3>10. <code>str.splitlines()</code> is not <code>split("\n")</code>, and <code>stat()</code> is not <code>read()</code></h3>
+    <p><b>Symptom.</b> JSONL records uploaded to a remote worker fail to parse with "Unterminated string"; a reused worker processes a stale input file.</p>
+    <p><b>Mechanism.</b> Python's <code>splitlines()</code> splits on every Unicode line boundary: U+2028, U+2029, U+0085, U+000C and more. Scraped HTML legally contains those inside JSON string values, so one record became two half-records. Separately, the worker's network volume has lazy read consistency: <code>stat()</code> reports the final size while <code>read()</code> returns short data for minutes after the upload, and a reused pod still held the previous run's file under the same name.</p>
+    <p><b>Fix.</b> <code>.splitlines()</code> to <code>.split("\n")</code> in all four readers. Uploads go to a temporary name followed by <code>mv -f</code> (atomic rename), then a remote check loops up to 20 times at 15 s intervals running a full <code>json.loads</code> over every line and comparing the line count to the local file, aborting on mismatch.</p>
+    <p><b>Verification.</b> The remote full-parse loop is the verification; it fails the run rather than the analysis.</p>
+    <p><b>Generalisation.</b> A line-delimited format is delimited by exactly one byte sequence; use the dumber splitter. On network filesystems, size is not readability; verify by parsing.</p>
+
+    <h2>D. Validating an automated repair loop</h2>
+
+    <h3>11. A validation set drawn only from failures cannot detect regressions</h3>
+    <p><b>Symptom.</b> Proposed replacement selectors pass every check (unique match, plausible value, no positional anchors) and still break extraction on most pages once published.</p>
+    <p><b>Mechanism.</b> The loop validated a proposal only against pages that had <em>failed</em>. Two classes of wrong proposal are invisible there: one written for a minority template that matches nothing on the majority layout, and one that picks a neighbouring element yielding a plausible but different value. Only pages where the current configuration works can expose either.</p>
+    <p><b>Fix.</b> A success gate at publish time and inside the loop, run over a sample of working pages that carry the value production extracted from that exact body:</p>
+<pre><code>got = checker(page.html, final_selector, field).get("value")
+if not got:                      lost += 1
+elif abs(float(got) - float(page.price)) &gt; 0.01: mismatch += 1
+if (lost + mismatch) and verdict in ("usable", "ambiguous"):
+    verdict = "regressive"       # counts and up to 3 mismatch samples stored on the row</code></pre>
+    <p>Sample size is set by the miss rate the gate must catch: a proposal that breaks 5% of working pages escapes a gate of 25 with probability 0.95<sup>25</sup> &asymp; 0.28 and a gate of 50 with 0.95<sup>50</sup> &asymp; 0.08, so the working sample was raised to 50, equal to the failed sample. Three companions: before proposing, run the <em>current</em> selector over the sampled failed pages and mark the proposal <code>current_works</code> if it extracts on all of them (the failure was on another field); treat a human rejection as a terminal state in the upsert filter, suppressing an identical re-proposal and re-filing a different one with the rejection history attached; and surface the null outcome, so a selector whose failed pages are all non-product bodies produces one policy row asked once (<code>status $nin [approved, rejected]</code>) instead of reappearing with thousands of "failures" every run.</p>
+    <p><b>Verification.</b> Synthetic pages: minority-template and wrong-element proposals draw faults, correct ones stay silent, an empty corpus is silent. Rejection logic checked against a decision table (same selector suppressed, different selector re-filed with history, approved untouched, pending refreshed). A separate read-only script measured whether the worker's parser (<code>html.parser</code>) and production's (<code>lxml</code>) disagreed on proposals: 3.2% of decisions depended on the parser, 28% were misses under both, so the dependency was not added and the effort moved to the proposal step.</p>
+    <p><b>Generalisation.</b> A repair loop needs labelled positives from the same distribution as its failures, sized by the regression rate it must catch; human decisions must be terminal states in any idempotent regeneration; "correctly produced nothing" must be observable as a decision. Measure a suspected cause before paying for its fix.</p>
+
+    <h3>12. Port semantics, not syntax: the PCRE <code>U</code> flag</h3>
+    <p><b>Symptom.</b> Hundreds of legacy extraction patterns fail to compile or capture entire pages when moved from PHP <code>preg_*</code> to Python <code>re</code>.</p>
+    <p><b>Mechanism.</b> Patterns like <code>@&lt;span class="price"&gt;(.+)&lt;/span&gt;@Us</code> rely on the PCRE <code>U</code> flag, which inverts quantifier greediness globally. Python has no equivalent, so <code>(.+)</code> stays greedy and a bounded capture swallows everything to the last closing tag.</p>
+    <p><b>Fix.</b> Parse delimiter and flags, map <code>s/i/m/x</code>, and honour <code>U</code> by rewriting the greediness of every quantifier outside escapes and character classes (<code>+</code> to <code>+?</code>, <code>+?</code> to <code>+</code>, counted <code>{m,n}</code> handled the same way). Group 1 is tag-stripped and whitespace-collapsed before numeric cleaning. The strategy is ordered after structured data and CSS, and the preference flag mirrors the CSS one so a shop configured only with patterns is not shipped with an empty extraction config.</p>
+    <p><b>Verification.</b> Every pattern compiles; live re-validation moved a large majority of the previous <code>invalid_css_selector</code> results to <code>ok_regex</code>, with a handful of genuine no-matches left.</p>
+    <p><b>Generalisation.</b> A single unhonoured flag changes the language, not the dialect. When adding a strategy, audit every branch written before it existed.</p>
+
+    <h2>E. Session identity</h2>
+
+    <h3>13. A placeholder that is never substituted is not a no-op; it is a shared identity</h3>
+    <p><b>Symptom.</b> Hundreds of logically independent sessions observed leaving through one exit address; two sessions configured for different countries share an exit; "rotate on burn" has no effect.</p>
+    <p><b>Mechanism.</b> The proxy password template contained <code>{session}</code>. One download path substituted it; another never did, and callers percent-encoded the password before the substitution check, so <code>"{session}" in url</code> was false and the upstream received the literal <code>%7Bsession%7D</code>. The upstream treated that literal as one session id for everyone. A second bug in the same family: the token minted from <code>host#lane</code> only mapped <code>.</code> to <code>-</code>, so <code>#</code> entered the proxy URL as a fragment delimiter and the client rejected every request with "Unsupported proxy syntax".</p>
+    <p><b>Fix.</b> Recognise the placeholder raw and encoded, case-insensitively, at every step it passes through; resolve it per namespace (<code>domain#lane</code>) so jars, personas, pinned user agents, session tokens and breakers are keyed together. Two token patterns on purpose, one for minting and one for validation, since a single pattern would flag every minted token and re-mint per request, destroying stickiness:</p>
+<pre><code>_SLUG_UNSAFE  = re.compile(r"[^a-z0-9]+")   # minting: collapse to a slug
+_TOKEN_UNSAFE = re.compile(r"[^a-z0-9-]")   # validation: re-mint stored tokens in place</code></pre>
+    <p>Two related bindings: a clearance cookie is bound to exit address <em>and</em> User-Agent, so the jar is dropped when the pinned UA is missing or when its browser family contradicts the TLS impersonation family (a Chrome UA on a Firefox TLS fingerprint is a positive bot signal, not a degraded request); and when merging cookie lists from incremental warm-ups, dedupe by name keeping the latest <code>expires</code>, because assignment order otherwise keeps the older cookie bound to a rotated-away exit.</p>
+    <p><b>Verification.</b> Measured on the gateway: the literal placeholder resolved to one exit; a per-domain token to a different one. Reassign mode shipped with nine async tests covering every failure path falling back to a fresh mint.</p>
+    <p><b>Generalisation.</b> Match placeholders after every encoding step they pass through. A documented invariant on identifiers is not an invariant until enforced at write and at read. Identity has to be coherent across address, cookie jar, UA and TLS family, or it is theatre.</p>
+
+    <h3>14. Rotation modes and pool bounds</h3>
+    <p><b>Symptom.</b> A "move the session to a fresh exit" operation ping-pongs between two already-blocked addresses.</p>
+    <p><b>Mechanism.</b> Three ways to react to a burn: mint a new session; reconnect the bound tunnel (<code>rotate</code>: a genuinely new address on the same pod, slow, disturbs other sessions there); or <code>reassign</code> to another already-connected pod in the same country (fast, token unchanged, no reconnect). Reassign only cycles among existing pods, so on a two-pod pinned pool its reachable address set has size two; freshness on a small pool requires reconnection. The pinned-pool variant for rate-limited-per-address targets admits an exit through three steps (echo the address un-pinned, rebuild the username with the pin and echo again requiring the same address, fetch the target requiring the configured status and no challenge markers), holds leases in a sorted set scored by <code>available_at</code>, evicts only on the configured burn statuses (a 404 is a URL-level error and must not count against an exit), and draws the rotate-every-N threshold once per cycle, because re-rolling per request makes the effective threshold the minimum of N draws.</p>
+    <p><b>Fix.</b> Rotation mode is a per-target setting with a comment recording why it was last flipped; every new mode falls back to a fresh mint on any failure path (no base URL, 404, non-200, unreachable, no live token).</p>
+    <p><b>Verification.</b> Rendered configurations diffed against HEAD so exactly the intended targets change; the reassign fallbacks unit-tested.</p>
+    <p><b>Generalisation.</b> Pod-hopping is bounded by pool size. Never count URL-level errors against an address. A threshold drawn per event is not the threshold you configured.</p>
+
+    <h3>15. Isolation multiplies the number of identities you must keep alive</h3>
+    <p><b>Symptom.</b> Splitting a queue into N isolated lanes on one country makes throughput worse, twice, within two days.</p>
+    <p><b>Mechanism.</b> A lane is one queue drained by its own Deployment plus a namespace <code>host#lane</code> isolating jar, clearance cookie, session token, persona pool and breaker. Lanes on the same country share one exit's per-address rate budget while each still needs its own clearance, and the warm-up solver runs one process-wide; N lanes cost N clearances per warm cycle against a fixed solve throughput. Six tokens on one country were measured landing on two exits, so the split bought failure isolation and independent sizing, not exit diversity.</p>
+    <p><b>Fix.</b> Lane count moved into the queue registry so the setup script derives shards from one source; back to a single queue with a per-request random delay as the only per-address pacing; disabled configuration left commented in place with the reason next to it, so re-enabling is an uncomment rather than an excavation.</p>
+    <p><b>Verification.</b> Rendered configs diffed against HEAD; Helm names checked one-for-one against registered shards.</p>
+    <p><b>Generalisation.</b> The binding constraint on isolation is the number of identities the warm-up path can sustain, not pod count. Keep the revert in place.</p>
+
+    <div class="callout"><b>The month's single most reusable mechanism:</b> a container restart reuses the network namespace, the sandbox's resolv.conf and every pod-scoped volume. Four of the sixteen entries (duplicate iptables and ip rules, the emptied resolv.conf, the logout-on-restart storm, the lease-holder ghosts) are the same mistake: a start-up script written as if it runs once. Make every mutation at start idempotent, and every cleanup conditional on <code>deletionTimestamp</code>.</div>
+
+    <h2>F. Geometry</h2>
+
+    <h3>16. Positions to rotations without inverse kinematics</h3>
+    <p><b>Symptom.</b> A skinned character driven from 23 joint positions per frame drifts at the wrists; one knee lands exactly and the ankle below it lands 30 cm away.</p>
+    <p><b>Mechanism.</b> Rotation alone cannot correct bone length, so error accumulates down each chain. The 30 cm ankle was a cache: a bone's world matrix was cached when its own position was read, before its rotation was solved, and its child then composed against the stale parent.</p>
+    <p><b>Fix.</b> Per bone, inherit the parent's rotation change, swing the rest direction onto the data segment with <code>setFromUnitVectors</code>, take roll from an explicit hint (hip line, shoulder line, bend plane) blended to the inherited roll when the hint's perpendicular component falls below 0.12 of unit length; re-length limb bones to the data segment each frame, reading the segment head from where the bone actually is; drop the cache entry the moment a bone is solved. Baked animations go through the same solver rather than copying quaternion tracks between rigs with different bone frames.</p>
+    <p><b>Verification.</b> Headless: every position in the database on four rigs, limb joint error 0.0 cm, roll error 0&deg; wherever the hint is strong, every clip poses a standing body. Full account in <a href="grapple-dojo-dots-to-skeleton.html">the retargeting post</a>.</p>
+    <p><b>Generalisation.</b> In a top-down solver a cached transform is valid only after its node is finalised. When the target can change length, stretching beats IK.</p>
+
+    <h2>Open questions, stated so they can be wrong</h2>
+    <ul>
+      <li>Every restart-in-place failure this month would have been prevented by a single rule: "no start-up mutation without a matching delete-until-absent". Claim: a linter that flags <code>iptables -I</code>, <code>ip rule add</code> and <code>echo &gt;&gt; /etc/resolv.conf</code> without a preceding delete loop would have caught four of sixteen entries at review time.</li>
+      <li>Claim: the closed-interval rule for incremental scans (entry 8) applies to every "process since watermark" loop over a mutable field, including log tailers keyed on modification time. A counterexample would be a scan where writers only ever decrease the key.</li>
+      <li>Claim: the sample-size arithmetic of entry 11 (escape probability (1&minus;p)<sup>n</sup>) is the right sizing rule for any publish gate, and the right n is the one that makes the escape probability lower than the human review rate. This month's 50 was chosen to match the failed sample, not derived; the derivation is next month's work.</li>
+    </ul>
+
+    <div class="srcbox"><span class="lbl">Related</span>
       <a class="srclink" href="grapple-dojo-dots-to-skeleton.html">→ Grapple Dojo: putting a real human on 23 dots</a>
+      <a class="srclink" href="cookie-handoff-warmup.html">→ The cookie handoff: let a browser solve it, then let curl fly</a>
+      <a class="srclink" href="personas-coherent-identity.html">→ Personas: give your scraper a coherent identity</a>
     </div>
-    <p class="endnote">Commit counts come straight from git; everything else about the work systems is deliberately vague. Retailers, vendors, markets and colleagues are anonymised, and any resemblance to a specific target is the technique's fault, not the notebook's.</p>
+    <p class="endnote">Commit counts and every threshold, size and unit above come from the diffs; anything that would identify a target, a vendor or a colleague was replaced before the diffs reached the draft. Entries 1 to 7 include teammates' commits where I reproduced the mechanism; the rest are mine.</p>
     <a class="backfeed" href="../index.html#feed">← Back to the feed</a>
   </div>
 </article>
