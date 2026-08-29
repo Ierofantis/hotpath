@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grapple Dojo: putting a real human on 23 dots — Hotpath</title>
+<meta name="description" content="GrappleMap stores joint positions. A Mixamo rig wants bone rotations. The bridge is a small per-bone solver with no IK, and it turned out to bake animations too.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
+<link rel="stylesheet" href="../assets/style.css"></head><body>
+<header class="nav"><div class="nav-inner">
+  <a class="logo" href="../index.html"><span class="spark">🔥</span>Hot<span class="path">path</span></a>
+  <div class="nav-spacer"></div>
+  <a class="nav-link" href="../index.html#feed">Latest</a>
+  <a class="nav-link" href="https://github.com/Ierofantis" target="_blank" rel="noopener">GitHub</a>
+  <a class="nav-cta" href="../index.html#feed">Read the feed</a>
+</div></header>
+<article class="article">
+  <div class="crumbs"><a href="../index.html">Hotpath</a> / Game Dev</div>
+  <h1>Grapple Dojo: putting a real human on 23 dots</h1>
+  <p class="sub">GrappleMap stores joint positions. A rigged character wants bone rotations. Nothing converts one into the other, so I wrote the converter: a per-bone solver with no IK that stretches bones instead, and that ended up baking the walk cycles too.</p>
+  <div class="byline"><span class="avatar">I</span> Ierofantis &middot; 8 min read &middot; side project</div>
+  <div class="artcover cv-fire">🧍</div>
+  <div class="prose">
+    <p>A GrappleMap frame is 138 numbers: two fighters, 23 joints each, x y z. That is the whole pose. Hips, knees, wrists, the tips of the fingers, all as points in space. It is a lovely format for a stick figure, and <a href="grapple-dojo-grappling-chess.html">Grapple Dojo</a> ran on stick figures and gi-coloured capsules for weeks. Then someone looked at the capsules and asked for a human. A face. Hands.</p>
+
+    <p>A human, in browser 3D, means a skinned GLTF character on a Mixamo skeleton. And a skeleton does not take positions. It takes <strong>rotations</strong>, one quaternion per bone, each expressed relative to its parent bone, sixty-odd of them in a tree. Hand the rig a list of points and it shrugs. The two representations do not overlap anywhere.</p>
+
+    <blockquote>Credit first: the pose data is <b>GrappleMap</b>, by <b>Eelis van der Weegen</b> (<a href="https://eel.is/GrappleMap/" target="_blank" rel="noopener">eel.is/GrappleMap</a>), public domain. The avatars are the rigged example characters that ship with <a href="https://github.com/mrdoob/three.js/tree/dev/examples/models/gltf" target="_blank" rel="noopener">three.js</a> (Mixamo and Ready Player Me models). What follows is the glue I wrote between the two.</blockquote>
+
+    <h2>Positions in, rotations out</h2>
+    <p>The core idea fits in a sentence. For each bone, look at the direction it points in the model's rest pose (bone to child bone), look at the direction the matching GrappleMap segment points (shoulder to elbow, say), and rotate the bone by the smallest rotation that takes one onto the other. three.js has that rotation as a one-liner, <code>Quaternion.setFromUnitVectors</code>. Walk the tree from the hips outward and every bone gets a rotation.</p>
+
+    <p>One detail makes it behave. Before you swing a bone toward its target, first apply whatever rotation its <em>parent</em> picked up since rest. A forearm inherits the upper arm's turn, then swings from there. Without that step every bone solves in isolation and the elbows look dislocated. With it, the solve is local and cheap: about twenty bones, twenty quaternion products, done.</p>
+
+    <pre><code>// parent's change since rest, applied to this bone's rest pose
+qDelta = qParentNow * inverse(qParentRest)
+qBone  = qDelta * qBoneRest
+dirNow = qDelta.apply(restDir)          // where the bone points after inheriting
+swing  = setFromUnitVectors(dirNow, dataDir)
+qBone  = swing * qBone                   // world rotation; convert to parent space and store</code></pre>
+
+    <h2>Roll is the part nobody mentions</h2>
+    <p>Two points fix a direction. They do not fix the twist around it. A thigh can point at the knee while rolled ninety degrees, and the mesh will happily show you a kneecap facing sideways. The data has no answer for this, because a point has no orientation, so you supply hints.</p>
+
+    <ul>
+      <li>The pelvis and lower spine roll to match the <strong>hip line</strong>, left hip to right hip.</li>
+      <li>The chest, neck and head roll to match the <strong>shoulder line</strong>. Because the two lines are read separately, a twisted torso twists.</li>
+      <li>An upper arm rolls so its <strong>elbow bends toward the wrist</strong>; a thigh so the knee bends away from the ankle. The bend plane is the hint.</li>
+      <li>A foot rolls so its top faces the knee.</li>
+    </ul>
+
+    <p>Each hint is projected perpendicular to the bone, and the same hint is measured once in the rest pose, so the solver knows what "elbow forward" looked like before anything moved. The catch is a straight limb: when the elbow is fully extended the bend plane collapses to nothing and the hint is noise. Below a threshold the solver ignores it and falls back to the inherited roll, with a short blend between the two regimes so nothing snaps when an arm passes through straight.</p>
+
+    <h2>Skip IK, stretch the bone</h2>
+    <p>The first version placed the shoulders, then the elbows drifted, then the wrists drifted further. Obvious in hindsight: the model's upper arm is not the same length as the data's upper arm, and rotation alone cannot fix length. Error accumulates down every chain. The textbook answer is inverse kinematics on the hands and feet. I did something dumber that turned out cleaner.</p>
+
+    <p>A skinned bone can change length. Its child sits at a local offset, and if you move that offset the mesh between them stretches with it. So every frame, each limb bone takes the length of its data segment, and its child lands exactly on the data joint. The stretch is a few percent, invisible on a forearm. To stop error accumulating, the head of each segment is read from where the bone <em>actually is</em> after its parents solved, rather than from the data point it is supposed to sit at. Whatever the model's proportions, the elbow ends up on the elbow.</p>
+
+    <div class="callout"><b>The reframe:</b> a retarget solver is a coordinate converter, not an animator. Feed it positions, take rotations, and let the mesh stretch to absorb the difference between the data's body and the model's. IK is for when you cannot cheat on length. Here you can.</div>
+
+    <p>Two things stay proportional. The spine is stretched once, at load, so the neck sits at GrappleMap height. The head keeps the model's size, because GrappleMap's head joint is the centre of the skull and the model's head bone is its base, and matching those would elongate every neck.</p>
+
+    <h2>The cache that lied</h2>
+    <p>One bug is worth telling. Reading "where the bone actually is" means composing matrices up the chain, so I cached them. The knee landed perfectly. The ankle landed thirty centimetres away. The thigh had asked for its own matrix <em>before</em> solving its rotation, the cache kept that unsolved matrix, and the shin then read a parent that no longer existed. Top-down solvers have one rule: a bone's cached transform is only valid after that bone is done. One line, drop the entry when the bone is solved, and the ankle snapped onto the data.</p>
+
+    <h2>Animations through the same door</h2>
+    <p>The avatars also needed idle, walk and run, for the lobby and for the menu. The three.js X Bot ships those clips, and every model here is Mixamo-named, so I copied the rotation tracks across by bone name. Feet at head height. Mixamo clips store absolute local rotations, and two rigs that share bone names still disagree on the rest orientation of each bone: X Bot is exported in a T-pose with rotated bone frames, the Ready Player Me avatar in an A-pose with plain ones. Quaternions do not survive that crossing.</p>
+
+    <p>Positions do. So the clips go through the same solver. Play the clip on the source skeleton, read its bones as 23 GrappleMap-style points per frame, push those points through the target's solver, record the target's own local rotations as a new clip. Thirty frames a second, a few hundred kilobytes of JSON per avatar, baked once by a node script. The game never learns that the walk cycle was born on a robot.</p>
+
+    <pre><code>for each frame t of the source clip:
+  mixer.setTime(t)                      // pose the source rig
+  P = jointsFromBones(sourceBones)      // 23 points, GrappleMap layout
+  target.retarget(P)                    // the exact solver the game runs
+  record target bone quaternions + hips position</code></pre>
+
+    <p>That turned "a human model" into "any human model". The roster is whatever rigged characters I can legally ship: a suited Ready Player Me man, Mixamo's Michelle and Soldier, and the robot for anyone who misses it. Each fighter picks one, the choice rides along with the look you send to an online opponent, and adding an avatar is a GLB in a folder plus one line in a roster file. The loader applies a model's <code>TPose</code> clip as its rest pose when it has one, and notices when a model was exported facing away from the camera and turns it around.</p>
+
+    <h2>Testing a 3D solver with no screen</h2>
+    <p>I could not look at the result while writing it, so the solver had to prove itself in node. Textured GLBs will not load there, because there is nothing to decode images with, so a small loader strips the textures out of the file and hands the rest to the real GLTFLoader. Then the test runs every position in the database through every avatar and asserts three things: each limb joint lands on its data point, each roll hint is honoured wherever the hint is strong, and each clip poses a body that stands on the mat with its head above its hands. When the Soldier failed the facing check it was the test that said so, in one line, before anyone saw a fighter grapple with its back turned.</p>
+
+    <p>The habit I am keeping: for anything geometric, write the headless check first and let the browser be the last confirmation rather than the first. A pose solver that is right in numbers is right on screen; the reverse is not guaranteed, and the numbers are cheaper to ask.</p>
+
+    <div class="srcbox"><span class="lbl">Play / read the code</span>
+      <a class="srclink" href="https://grapple-dojo.onrender.com/" target="_blank" rel="noopener">→ Grapple Dojo (pick a human avatar in the Fighters card)</a>
+      <a class="srclink" href="https://github.com/Ierofantis/grapple_dojo" target="_blank" rel="noopener">→ github.com/Ierofantis/grapple_dojo (client/src/human.js is the solver)</a>
+      <a class="srclink" href="https://eel.is/GrappleMap/" target="_blank" rel="noopener">→ GrappleMap by Eelis van der Weegen</a>
+    </div>
+    <p class="endnote">Built by me on top of GrappleMap, by Eelis van der Weegen, used under its public-domain terms. Avatars are the Mixamo and Ready Player Me example characters distributed with three.js. For the game itself, start with <a href="grapple-dojo-grappling-chess.html">the Grapple Dojo post</a>; for the data model, <a href="grapplemap-grappling-as-a-graph.html">the GrappleMap deep dive</a>.</p>
+    <a class="backfeed" href="../index.html#feed">← Back to the feed</a>
+  </div>
+</article>
+<footer class="foot"><div class="foot-inner">
+  <a class="logo" href="../index.html" style="font-size:16px"><span class="spark" style="width:24px;height:24px;font-size:13px">🔥</span>Hotpath</a>
+  <div class="foot-spacer"></div><span>Written by Ierofantis</span>
+</div></footer>
+</body></html>

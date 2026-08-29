@@ -1,162 +1,464 @@
 [
   {
+    "slug": "grapple-dojo-dots-to-skeleton",
+    "cover": "cv-fire",
+    "emoji": "🧍",
+    "cat": "Game Dev",
+    "title": "Grapple Dojo: putting a real human on 23 dots",
+    "excerpt": "GrappleMap stores joint positions; a Mixamo rig wants bone rotations. I wrote the converter: a per-bone solver with no IK that stretches bones instead, and it ended up baking the walk cycles too.",
+    "tags": [
+      {
+        "label": "Game Dev",
+        "cls": "t-orange"
+      },
+      {
+        "label": "three.js"
+      },
+      {
+        "label": "Retargeting"
+      }
+    ],
+    "read": "8 min read",
+    "note": "Side project &middot; built on <i>GrappleMap</i>"
+  },
+  {
     "slug": "harness-is-all-you-need",
-    "cover": "cv-build", "emoji": "🔧", "cat": "AI",
+    "cover": "cv-build",
+    "emoji": "🔧",
+    "cat": "AI",
     "title": "The harness is all you need: an LLM that repairs 1,400 rules and decides nothing",
     "excerpt": "I put a language model inside a production maintenance pipeline. The model proposes, deterministic code verifies, a human approves. Tripling the model did nothing; narrowing what it sees doubled precision.",
-    "tags": [{"label": "AI Systems", "cls": "t-purple"}, {"label": "LLMs"}, {"label": "Verification"}],
-    "read": "9 min read", "note": "From my essay on dev.to"
+    "tags": [
+      {
+        "label": "AI Systems",
+        "cls": "t-purple"
+      },
+      {
+        "label": "LLMs"
+      },
+      {
+        "label": "Verification"
+      }
+    ],
+    "read": "9 min read",
+    "note": "From my essay on dev.to"
   },
   {
     "slug": "shooting-range-flash-to-canvas",
-    "cover": "cv-fire", "emoji": "🎯", "cat": "Game Dev",
+    "cover": "cv-fire",
+    "emoji": "🎯",
+    "cat": "Game Dev",
     "title": "Shooting Range: resurrecting a 2016 Flash game with zero assets",
     "excerpt": "My first game was a .swf nothing can open anymore. I rebuilt it as one canvas and one script: every sprite drawn, every gunshot synthesized with Web Audio, and a five-line Render blueprint with no build step.",
-    "tags": [{"label": "Game Dev", "cls": "t-orange"}, {"label": "Canvas"}, {"label": "Web Audio"}],
-    "read": "6 min read", "note": "Side project"
+    "tags": [
+      {
+        "label": "Game Dev",
+        "cls": "t-orange"
+      },
+      {
+        "label": "Canvas"
+      },
+      {
+        "label": "Web Audio"
+      }
+    ],
+    "read": "6 min read",
+    "note": "Side project"
   },
   {
     "slug": "postgres-as-your-queue",
-    "cover": "cv-build", "emoji": "🐘", "cat": "Backend",
+    "cover": "cv-build",
+    "emoji": "🐘",
+    "cat": "Backend",
     "title": "You probably don't need Redis: Postgres as your job queue",
     "excerpt": "The 2026 revival of \"just use Postgres\" is not hype. SKIP LOCKED for queues, LISTEN/NOTIFY for pub/sub, UNLOGGED tables for cache: the database you already run covers most of what you reach for Redis to do.",
-    "tags": [{"label": "Trendy", "cls": "t-trendy"}, {"label": "Postgres"}, {"label": "Queues"}],
-    "read": "7 min read", "note": "Trending &middot; Postgres for everything"
+    "tags": [
+      {
+        "label": "Trendy",
+        "cls": "t-trendy"
+      },
+      {
+        "label": "Postgres"
+      },
+      {
+        "label": "Queues"
+      }
+    ],
+    "read": "7 min read",
+    "note": "Trending &middot; Postgres for everything"
   },
   {
     "slug": "ai-agents-context-not-code",
-    "cover": "cv-build", "emoji": "🤖", "cat": "AI",
+    "cover": "cv-build",
+    "emoji": "🤖",
+    "cat": "AI",
     "title": "AI coding agents don't have a code problem, they have a context problem",
     "excerpt": "2026's agents plan, code, test, and deploy on their own. The bottleneck moved from writing code to feeding them the right context and validating what comes back. Autonomy without a gate ships confident mistakes.",
-    "tags": [{"label": "Trendy", "cls": "t-trendy"}, {"label": "AI Agents"}, {"label": "LLMs"}],
-    "read": "7 min read", "note": "Trending &middot; agentic coding"
+    "tags": [
+      {
+        "label": "Trendy",
+        "cls": "t-trendy"
+      },
+      {
+        "label": "AI Agents"
+      },
+      {
+        "label": "LLMs"
+      }
+    ],
+    "read": "7 min read",
+    "note": "Trending &middot; agentic coding"
   },
   {
     "slug": "agents-branch-your-database",
-    "cover": "cv-graph", "emoji": "🌱", "cat": "Data",
+    "cover": "cv-graph",
+    "emoji": "🌱",
+    "cat": "Data",
     "title": "Before an agent touches production, give it a branch of the database",
     "excerpt": "Agents happily write and run schema migrations now. Point one at production directly and you have automated your worst outage. Give it an isolated branch, validate, then merge.",
-    "tags": [{"label": "Trendy", "cls": "t-trendy"}, {"label": "Databases"}, {"label": "AI Agents"}],
-    "read": "7 min read", "note": "Trending &middot; database branching"
+    "tags": [
+      {
+        "label": "Trendy",
+        "cls": "t-trendy"
+      },
+      {
+        "label": "Databases"
+      },
+      {
+        "label": "AI Agents"
+      }
+    ],
+    "read": "7 min read",
+    "note": "Trending &middot; database branching"
   },
   {
     "slug": "fuzzy-matching-product-names",
-    "cover": "cv-graph", "emoji": "🧩", "cat": "Data",
+    "cover": "cv-graph",
+    "emoji": "🧩",
+    "cat": "Data",
     "title": "Fuzzy matching product names: Levenshtein, token scorers, and why you layer them",
     "excerpt": "You scraped a product page with no barcode. Match its URL slug to a million-row catalog by meaning, not spelling: edit distance as the floor, token scorers on top, candidates narrowed first.",
-    "tags": [{"label": "Data Matching", "cls": "t-green"}, {"label": "Python"}, {"label": "Algorithms"}],
-    "read": "9 min read", "note": "From my scraping stack"
+    "tags": [
+      {
+        "label": "Data Matching",
+        "cls": "t-green"
+      },
+      {
+        "label": "Python"
+      },
+      {
+        "label": "Algorithms"
+      }
+    ],
+    "read": "9 min read",
+    "note": "From my scraping stack"
   },
   {
     "slug": "why-akamai-is-harder-than-cloudflare",
-    "cover": "cv-shield", "emoji": "🧱", "cat": "Systems",
+    "cover": "cv-shield",
+    "emoji": "🧱",
+    "cat": "Systems",
     "title": "Why Akamai is harder than Cloudflare",
     "excerpt": "People lump the big bot defenses together and waste weeks. Cloudflare is a gate you pass once; Akamai is a relationship you maintain, with a sensor payload it revalidates the whole time.",
-    "tags": [{"label": "Web Scraping", "cls": "t-blue"}, {"label": "Anti-Bot"}, {"label": "Akamai"}],
-    "read": "8 min read", "note": "Adapted from <i>The Quiet Fetch</i>"
+    "tags": [
+      {
+        "label": "Web Scraping",
+        "cls": "t-blue"
+      },
+      {
+        "label": "Anti-Bot"
+      },
+      {
+        "label": "Akamai"
+      }
+    ],
+    "read": "8 min read",
+    "note": "Adapted from <i>The Quiet Fetch</i>"
   },
   {
     "slug": "state-machine-not-saga",
-    "cover": "cv-build", "emoji": "🗺️", "cat": "Architecture",
+    "cover": "cv-build",
+    "emoji": "🗺️",
+    "cat": "Architecture",
     "title": "State machine, not saga",
     "excerpt": "When work spans processes, the first incident question is: where is this item right now? Track explicit states, and skip the saga you cannot afford until a real side effect demands it.",
-    "tags": [{"label": "Architecture", "cls": "t-purple"}, {"label": "Reliability"}, {"label": "State"}],
-    "read": "7 min read", "note": "Adapted from <i>Refactoring</i>"
+    "tags": [
+      {
+        "label": "Architecture",
+        "cls": "t-purple"
+      },
+      {
+        "label": "Reliability"
+      },
+      {
+        "label": "State"
+      }
+    ],
+    "read": "7 min read",
+    "note": "Adapted from <i>Refactoring</i>"
   },
   {
     "slug": "the-proxy-grid",
-    "cover": "cv-shield", "emoji": "🌐", "cat": "Systems",
+    "cover": "cv-shield",
+    "emoji": "🌐",
+    "cat": "Systems",
     "title": "The proxy grid: your address is part of your identity",
     "excerpt": "You can get the TLS fingerprint perfect and still get blocked, because the address the request arrives on is a layer of the identity too, and defenses bind their trust to it.",
-    "tags": [{"label": "Web Scraping", "cls": "t-blue"}, {"label": "Proxies"}, {"label": "Networking"}],
-    "read": "7 min read", "note": "Adapted from <i>The Quiet Fetch</i>"
+    "tags": [
+      {
+        "label": "Web Scraping",
+        "cls": "t-blue"
+      },
+      {
+        "label": "Proxies"
+      },
+      {
+        "label": "Networking"
+      }
+    ],
+    "read": "7 min read",
+    "note": "Adapted from <i>The Quiet Fetch</i>"
   },
   {
     "slug": "strangler-fig-live-migration",
-    "cover": "cv-build", "emoji": "🌿", "cat": "Architecture",
+    "cover": "cv-build",
+    "emoji": "🌿",
+    "cat": "Architecture",
     "title": "The strangler fig: rebuild a live system without a rewrite",
     "excerpt": "The clean rewrite is the option everyone wants and the one that usually dies. Stand a new system around the old and retire it piece by piece, each step reversible.",
-    "tags": [{"label": "Architecture", "cls": "t-purple"}, {"label": "Migration"}, {"label": "Legacy"}],
-    "read": "8 min read", "note": "Adapted from <i>Refactoring</i>"
+    "tags": [
+      {
+        "label": "Architecture",
+        "cls": "t-purple"
+      },
+      {
+        "label": "Migration"
+      },
+      {
+        "label": "Legacy"
+      }
+    ],
+    "read": "8 min read",
+    "note": "Adapted from <i>Refactoring</i>"
   },
   {
     "slug": "personas-coherent-identity",
-    "cover": "cv-shield", "emoji": "🎭", "cat": "Systems",
+    "cover": "cv-shield",
+    "emoji": "🎭",
+    "cat": "Systems",
     "title": "Personas: give your scraper a coherent identity",
     "excerpt": "A Chrome User-Agent over a Firefox handshake is not a hybrid, it is an identity that cannot exist. Bind the layers into one object so the impossible one is unreachable.",
-    "tags": [{"label": "Web Scraping", "cls": "t-blue"}, {"label": "Identity"}, {"label": "TLS"}],
-    "read": "7 min read", "note": "Adapted from <i>The Quiet Fetch</i>"
+    "tags": [
+      {
+        "label": "Web Scraping",
+        "cls": "t-blue"
+      },
+      {
+        "label": "Identity"
+      },
+      {
+        "label": "TLS"
+      }
+    ],
+    "read": "7 min read",
+    "note": "Adapted from <i>The Quiet Fetch</i>"
   },
   {
     "slug": "cookie-handoff-warmup",
-    "cover": "cv-shield", "emoji": "🍪", "cat": "Systems",
+    "cover": "cv-shield",
+    "emoji": "🍪",
+    "cat": "Systems",
     "title": "The cookie handoff: let a browser solve it, then let curl fly",
     "excerpt": "An HTTP client cannot run JavaScript, yet a warmup beats defenses that demand it. The trick is splitting the work: a browser solves once, a fast client replays.",
-    "tags": [{"label": "Web Scraping", "cls": "t-blue"}, {"label": "Anti-Bot"}, {"label": "Browsers"}],
-    "read": "7 min read", "note": "Adapted from <i>The Quiet Fetch</i>"
+    "tags": [
+      {
+        "label": "Web Scraping",
+        "cls": "t-blue"
+      },
+      {
+        "label": "Anti-Bot"
+      },
+      {
+        "label": "Browsers"
+      }
+    ],
+    "read": "7 min read",
+    "note": "Adapted from <i>The Quiet Fetch</i>"
   },
   {
     "slug": "unmasking-the-origin",
-    "cover": "cv-shield", "emoji": "🕵️", "cat": "Security",
+    "cover": "cv-shield",
+    "emoji": "🕵️",
+    "cat": "Security",
     "title": "Find your own origin before someone else does",
     "excerpt": "A CDN only protects you if its shield cannot be walked around. Here is the audit an attacker would run against your origin, so you can run it first. Authorized targets only.",
-    "tags": [{"label": "Security", "cls": "t-blue"}, {"label": "Recon"}, {"label": "DNS"}],
-    "read": "8 min read", "note": "Adapted from <i>The Quiet Fetch</i>"
+    "tags": [
+      {
+        "label": "Security",
+        "cls": "t-blue"
+      },
+      {
+        "label": "Recon"
+      },
+      {
+        "label": "DNS"
+      }
+    ],
+    "read": "8 min read",
+    "note": "Adapted from <i>The Quiet Fetch</i>"
   },
   {
     "slug": "one-pipeline-three-services",
-    "cover": "cv-build", "emoji": "⚙️", "cat": "Architecture",
+    "cover": "cv-build",
+    "emoji": "⚙️",
+    "cat": "Architecture",
     "title": "Why we split one pipeline into three services",
     "excerpt": "Fetch, parse, and store are three kinds of work with three resource profiles. One process forces them to share a fate they never shared in nature.",
-    "tags": [{"label": "Architecture", "cls": "t-purple"}, {"label": "Queues"}, {"label": "Scaling"}],
-    "read": "7 min read", "note": "Adapted from <i>Refactoring</i>"
+    "tags": [
+      {
+        "label": "Architecture",
+        "cls": "t-purple"
+      },
+      {
+        "label": "Queues"
+      },
+      {
+        "label": "Scaling"
+      }
+    ],
+    "read": "7 min read",
+    "note": "Adapted from <i>Refactoring</i>"
   },
   {
     "slug": "ordered-by-design-sort-contract",
-    "cover": "cv-graph", "emoji": "↕️", "cat": "Databases",
+    "cover": "cv-graph",
+    "emoji": "↕️",
+    "cat": "Databases",
     "title": "Declare your sort order and delete half your memory",
     "excerpt": "When producers declare sort order as a contract, consumers can pick a merge over a hash, and the state they must keep collapses from huge to constant.",
-    "tags": [{"label": "Databases", "cls": "t-green"}, {"label": "SQL"}, {"label": "Streaming"}],
-    "read": "8 min read", "note": "From <i>Ordered by Design</i>"
+    "tags": [
+      {
+        "label": "Databases",
+        "cls": "t-green"
+      },
+      {
+        "label": "SQL"
+      },
+      {
+        "label": "Streaming"
+      }
+    ],
+    "read": "8 min read",
+    "note": "From <i>Ordered by Design</i>"
   },
   {
     "slug": "grapple-dojo-grappling-chess",
-    "cover": "cv-fire", "emoji": "🥋", "cat": "Game Dev",
+    "cover": "cv-fire",
+    "emoji": "🥋",
+    "cat": "Game Dev",
     "title": "Grapple Dojo: turning a grappling database into a turn-based game",
     "excerpt": "Grappling chess, built on GrappleMap: 843 real positions, 1,485 transitions, 3D stick figures, and a duel where you spot the real technique among decoys.",
-    "tags": [{"label": "Side Project", "cls": "t-orange"}, {"label": "Three.js"}, {"label": "Multiplayer"}],
-    "read": "8 min read", "note": "Side project"
+    "tags": [
+      {
+        "label": "Side Project",
+        "cls": "t-orange"
+      },
+      {
+        "label": "Three.js"
+      },
+      {
+        "label": "Multiplayer"
+      }
+    ],
+    "read": "8 min read",
+    "note": "Side project"
   },
   {
     "slug": "scrapers-six-surfaces",
-    "cover": "cv-shield", "emoji": "🛡️", "cat": "Systems",
+    "cover": "cv-shield",
+    "emoji": "🛡️",
+    "cat": "Systems",
     "title": "Why your scraper gets blocked: the six surfaces",
     "excerpt": "A correct User-Agent is not a disguise. Cloudflare and Akamai read six layers at once, and only about a fifth of them travel as bytes you control. Here is the whole stack.",
-    "tags": [{"label": "Web Scraping", "cls": "t-blue"}, {"label": "Anti-Bot"}, {"label": "TLS"}],
-    "read": "9 min read", "note": "Adapted from <i>The Quiet Fetch</i>"
+    "tags": [
+      {
+        "label": "Web Scraping",
+        "cls": "t-blue"
+      },
+      {
+        "label": "Anti-Bot"
+      },
+      {
+        "label": "TLS"
+      }
+    ],
+    "read": "9 min read",
+    "note": "Adapted from <i>The Quiet Fetch</i>"
   },
   {
     "slug": "stack-panic-call-stack-furnace",
-    "cover": "cv-fire", "emoji": "🔥", "cat": "Game Dev",
+    "cover": "cv-fire",
+    "emoji": "🔥",
+    "cat": "Game Dev",
     "title": "Stack Panic: I turned the call stack into a furnace",
     "excerpt": "Real LeetCode problems fall into a furnace on an accelerating timer. Type the missing line or the spawns get permanently faster. Here is how the panic loop is built.",
-    "tags": [{"label": "Side Project", "cls": "t-orange"}, {"label": "JavaScript"}, {"label": "Game Design"}],
-    "read": "7 min read", "note": "Side project"
+    "tags": [
+      {
+        "label": "Side Project",
+        "cls": "t-orange"
+      },
+      {
+        "label": "JavaScript"
+      },
+      {
+        "label": "Game Design"
+      }
+    ],
+    "read": "7 min read",
+    "note": "Side project"
   },
   {
     "slug": "config-over-code-human-ceiling",
-    "cover": "cv-build", "emoji": "🏗️", "cat": "Architecture",
+    "cover": "cv-build",
+    "emoji": "🏗️",
+    "cat": "Architecture",
     "title": "Config over code, and the ceiling only a machine can raise",
     "excerpt": "Moving behavior into configuration has a limit, and the limit is human. A language model in the maintenance loop moves that ceiling. It does not remove it.",
-    "tags": [{"label": "Data Pipelines", "cls": "t-purple"}, {"label": "Config"}, {"label": "LLMs"}],
-    "read": "8 min read", "note": "Adapted from <i>Refactoring Unified</i>"
+    "tags": [
+      {
+        "label": "Data Pipelines",
+        "cls": "t-purple"
+      },
+      {
+        "label": "Config"
+      },
+      {
+        "label": "LLMs"
+      }
+    ],
+    "read": "8 min read",
+    "note": "Adapted from <i>Refactoring Unified</i>"
   },
   {
     "slug": "grapplemap-grappling-as-a-graph",
-    "cover": "cv-graph", "emoji": "🥋", "cat": "Graphs",
+    "cover": "cv-graph",
+    "emoji": "🥋",
+    "cat": "Graphs",
     "title": "GrappleMap: modeling grappling as a graph of positions",
     "excerpt": "A whole martial art as nodes and edges: positions are states, transitions are the moves between them. Notes from hacking on Eelis van der Weegen's GrappleMap.",
-    "tags": [{"label": "Open Source", "cls": "t-green"}, {"label": "C++"}, {"label": "Data Modeling"}],
-    "read": "8 min read", "note": "Deep dive"
+    "tags": [
+      {
+        "label": "Open Source",
+        "cls": "t-green"
+      },
+      {
+        "label": "C++"
+      },
+      {
+        "label": "Data Modeling"
+      }
+    ],
+    "read": "8 min read",
+    "note": "Deep dive"
   }
 ]
